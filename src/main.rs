@@ -33,6 +33,7 @@ async fn xmr() -> String {
 
 #[launch]
 async fn rocket() -> _ {
+    establish_pgdb_connection().await;
     check_xmr_rpc_connection().await;
     rocket::build()
         .mount("/xmr", routes![xmr])

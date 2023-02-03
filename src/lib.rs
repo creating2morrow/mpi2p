@@ -9,7 +9,7 @@ use std::env;
 
 const GET_XMR_RPC_VERSION_ERROR: &str = "GET_XMR_RPC_VERSION_ERROR";
 
-pub fn establish_connection() -> PgConnection {
+pub async fn establish_pgdb_connection() -> PgConnection {
     dotenv().ok();
 
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
