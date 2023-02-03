@@ -1,0 +1,26 @@
+use diesel::prelude::*;
+
+#[derive(Queryable)]
+pub struct Customer {
+    pub id: i32,
+    pub c_name: String,
+    pub c_pgp: String,
+}
+
+#[derive(Queryable)]
+pub struct Order {
+    pub id: i32,
+    pub c_id: String,
+    pub p_id: String,
+    pub o_date: i32,
+    pub o_hash: String,
+}
+
+use crate::schema;
+
+#[derive(Insertable)]
+#[diesel(table_name = schema::customers)]
+pub struct NewCustomer<'a> {
+    pub c_name: &'a str,
+    pub c_pgp: &'a str,
+}
