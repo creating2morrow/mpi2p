@@ -10,7 +10,7 @@ CREATE TABLE orders (
   o_date INT NOT NULL,
   o_deliver_date INT,
   o_ship_date INT,
-  o_hash VARCHAR
+  o_hash VARCHAR,
   o_msig_prepare TEXT,
   o_msig_make TEXT,
   o_msig_kex TEXT,

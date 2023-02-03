@@ -1,26 +1,13 @@
 pub mod models;
 pub mod schema;
-
+pub mod reqres;
 use self::models::*;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use dotenv::dotenv;
 use std::env;
 
-/*
- TODO:
-   1)  get_customer
-   2)  update_customer
-   3)  create_product
-   4)  get_product
-   5)  update_product
-   6)  create_vendor
-   7)  get_vendor
-   8)  update_vendor
-   9)  create_order
-   10) get_order
-   11) update_order
-*/
+const GET_XMR_RPC_VERSION_ERROR: &str = "GET_XMR_RPC_VERSION_ERROR";
 
 pub fn establish_connection() -> PgConnection {
     dotenv().ok();
@@ -30,13 +17,49 @@ pub fn establish_connection() -> PgConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-pub fn create_customer(conn: &mut PgConnection, c_name: &str, c_pgp: &str) -> Customer {
+pub fn create_customer(conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str) -> Customer {
     use crate::schema::customers;
 
-    let new_customer = NewCustomer { c_name, c_pgp };
+    let new_customer = NewCustomer { c_xmr_address, c_name, c_pgp };
 
     diesel::insert_into(customers::table)
         .values(&new_customer)
         .get_result(conn)
         .expect("Error saving new customer")
+}
+
+pub async fn get_xmr_version() -> String {
+    let client = reqwest::Client::new();
+    let net = "http://127.0.0.1:38083/json_rpc"; // TODO: this as cmd line arg
+    let req = reqres::RpcRequest { 
+        jsonrpc: "2.0".to_string(), 
+        id: "0".to_string(), 
+        method: "get_version".to_string()
+    };
+    match client
+        .post(net)
+        .json(&req)
+        .send()
+        .await
+    {
+        Ok(response) => {
+            let res = response.json::<reqres::RpcResponse>().await;
+            match res {
+                Ok(res) => format!(
+                    "{{ \"version\": {} }}", res.result.version
+                    ),
+                _=> GET_XMR_RPC_VERSION_ERROR.to_string()
+            }
+        }
+        Err(_e) => {
+            GET_XMR_RPC_VERSION_ERROR.to_string()
+        }
+    }
+}
+
+pub async fn check_xmr_rpc_connection() -> () {
+    let ver: String = get_xmr_version().await;
+    if ver == GET_XMR_RPC_VERSION_ERROR {
+        panic!("Failed to connect to monero-wallet-rpc");
+    }
 }

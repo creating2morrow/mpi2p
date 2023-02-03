@@ -3,6 +3,7 @@ use diesel::prelude::*;
 #[derive(Queryable)]
 pub struct Customer {
     pub id: i32,
+    pub c_xmr_address: String,
     pub c_name: String,
     pub c_pgp: String,
 }
@@ -21,6 +22,7 @@ use crate::schema;
 #[derive(Insertable)]
 #[diesel(table_name = schema::customers)]
 pub struct NewCustomer<'a> {
+    pub c_xmr_address: &'a str,
     pub c_name: &'a str,
     pub c_pgp: &'a str,
 }
