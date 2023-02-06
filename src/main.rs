@@ -7,6 +7,7 @@ use mpi2p::*;
 
 /*
  TODO:
+   - i2p installation and setup
    - update order and vendor models / schemas to have v/o_xmr_address
    - md5 auth module
    - cmd line args
@@ -26,15 +27,23 @@ use mpi2p::*;
 */
 
 #[get("/version")]
-async fn xmr() -> String {
+async fn version() -> String {
     get_xmr_version().await
 }
+
+#[get("/login/<address>/<signature>")]
+async fn customer_login(address: String, signature: String) -> String {
+    verify_signature(address, signature).await
+}
+
 
 
 #[launch]
 async fn rocket() -> _ {
+    // pdgb and monero-wallet-rpc are required to be up at boot time
     establish_pgdb_connection().await;
     check_xmr_rpc_connection().await;
     rocket::build()
-        .mount("/xmr", routes![xmr])
+        .mount("/customer", routes![customer_login])
+        .mount("/xmr", routes![version])
 }
