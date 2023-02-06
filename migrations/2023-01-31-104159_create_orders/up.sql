@@ -7,6 +7,7 @@ CREATE TABLE orders (
   CONSTRAINT fk_product
       FOREIGN KEY(id) 
 	    REFERENCES products(id),
+  o_xmr_address VARCHAR,
   o_date INT NOT NULL,
   o_deliver_date INT,
   o_ship_date INT,

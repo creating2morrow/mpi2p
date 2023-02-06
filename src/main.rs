@@ -1,14 +1,12 @@
 #[macro_use] extern crate rocket;
 
-pub mod reqres;
+use diesel::prelude::*;
 use mpi2p::*;
 
 #[cfg(test)] mod tests;
 
 /*
  TODO:
-   - i2p installation and setup
-   - update order and vendor models / schemas to have v/o_xmr_address
    - md5 auth module
    - cmd line args
    - rpc connection check on startup
@@ -24,6 +22,7 @@ use mpi2p::*;
    - create_order
    - get_order
    - update_order
+   - i2p installation and setup
 */
 
 #[get("/version")]
@@ -33,10 +32,21 @@ async fn version() -> String {
 
 #[get("/login/<address>/<signature>")]
 async fn customer_login(address: String, signature: String) -> String {
-    verify_signature(address, signature).await
+    use self::schema::customers::dsl::*;
+    let check_sig: String = verify_signature(address, signature).await;
+    let connection = &mut establish_pgdb_connection().await;
+    let results = customers
+        .filter(schema::customers::c_xmr_address.eq(&check_sig))
+        .load::<models::Customer>(connection);
+    
+    // TODO: add to db on initial login
+    match results {
+        Ok(r) => println!("Customer exists: {:?}", r),
+        _=> println!("Customer does not exists")
+    }
+    
+    check_sig.to_string()
 }
-
-
 
 #[launch]
 async fn rocket() -> _ {

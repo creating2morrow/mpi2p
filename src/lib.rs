@@ -2,6 +2,7 @@ pub mod models;
 pub mod schema;
 pub mod reqres;
 use self::models::*;
+use std::fmt::{self, Debug};
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use dotenv::dotenv;
@@ -9,11 +10,23 @@ use std::env;
 
 // TODO: random data for each login?
 const LOGIN_DATA: &str = "LOGIN";
-// TODO: Error enum
-const GET_XMR_RPC_VERSION_ERROR: &str = "GET_XMR_RPC_VERSION_ERROR";
+
+#[derive(Debug)]
+enum ApplicationErrors {
+    XmrRpcVersionError,
+    XmrVerifyError,
+}
+
+impl fmt::Display for ApplicationErrors {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
 // TODO: cmd line args
 const XMR_RPC_HOST: &str = "http://127.0.0.1:38083/json_rpc";
 
+// PGDB stuff
 pub async fn establish_pgdb_connection() -> PgConnection {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -29,7 +42,9 @@ pub fn create_customer(conn: &mut PgConnection, c_xmr_address: &str, c_name: &st
         .get_result(conn)
         .expect("Error saving new customer")
 }
+// END PGDB stuff
 
+// XMR RPC stuff
 pub async fn get_xmr_version() -> String {
     let client = reqwest::Client::new();
     let net = XMR_RPC_HOST.to_string(); // TODO: this as cmd line arg
@@ -44,18 +59,18 @@ pub async fn get_xmr_version() -> String {
             let res = response.json::<reqres::XmrRpcVersionResponse>().await;
             match res {
                 Ok(res) => format!("{{ \"version\": {} }}", res.result.version),
-                _=> GET_XMR_RPC_VERSION_ERROR.to_string()
+                _=> ApplicationErrors::XmrRpcVersionError.to_string()
             }
         }
         Err(_e) => {
-            GET_XMR_RPC_VERSION_ERROR.to_string()
+            ApplicationErrors::XmrRpcVersionError.to_string()
         }
     }
 }
 
 pub async fn check_xmr_rpc_connection() -> () {
     let ver: String = get_xmr_version().await;
-    if ver == GET_XMR_RPC_VERSION_ERROR {
+    if ver == ApplicationErrors::XmrRpcVersionError.to_string() {
         panic!("Failed to connect to monero-wallet-rpc");
     }
 }
@@ -83,14 +98,15 @@ pub async fn verify_signature(address: String, signature: String) -> String {
                     if res.result.good {
                         format!("{{ \"address\": {} }}", &req.params.address)
                     } else {
-                        GET_XMR_RPC_VERSION_ERROR.to_string()
+                        ApplicationErrors::XmrVerifyError.to_string()
                     }
                 }
-                _=> GET_XMR_RPC_VERSION_ERROR.to_string()
+                _=> ApplicationErrors::XmrVerifyError.to_string()
             }
         }
         Err(_e) => {
-            GET_XMR_RPC_VERSION_ERROR.to_string()
+            ApplicationErrors::XmrVerifyError.to_string()
         }
     }
 }
+// END XMR RPC stuff

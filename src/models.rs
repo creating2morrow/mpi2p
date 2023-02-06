@@ -1,6 +1,6 @@
 use diesel::prelude::*;
 
-#[derive(Queryable)]
+#[derive(Queryable, Debug)]
 pub struct Customer {
     pub id: i32,
     pub c_xmr_address: String,
