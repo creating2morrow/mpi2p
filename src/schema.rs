@@ -12,6 +12,7 @@ diesel::table! {
 diesel::table! {
     orders (id) {
         id -> Int4,
+        o_xmr_address -> Nullable<Varchar>,
         o_date -> Int4,
         o_deliver_date -> Nullable<Int4>,
         o_ship_date -> Nullable<Int4>,
@@ -37,8 +38,9 @@ diesel::table! {
 diesel::table! {
     vendors (id) {
         id -> Int4,
-        name -> Varchar,
-        description -> Text,
+        v_xmr_address -> Varchar,
+        v_display_name -> Varchar,
+        v_description -> Text,
         active -> Bool,
     }
 }

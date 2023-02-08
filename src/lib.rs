@@ -13,6 +13,7 @@ const LOGIN_DATA: &str = "LOGIN";
 
 #[derive(Debug)]
 enum ApplicationErrors {
+    CreateCustomerError,
     XmrRpcVersionError,
     XmrVerifyError,
 }
@@ -34,13 +35,37 @@ pub async fn establish_pgdb_connection() -> PgConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-pub fn create_customer(conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str) -> Customer {
+async fn create_customer(conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str) -> Customer {
     use crate::schema::customers;
     let new_customer = NewCustomer { c_xmr_address, c_name, c_pgp };
     diesel::insert_into(customers::table)
         .values(&new_customer)
         .get_result(conn)
         .expect("Error saving new customer")
+}
+
+pub async fn verify_customer_login(address: String, signature: String) -> String {
+    use self::schema::customers::dsl::*;
+    let sig_address: String = verify_signature(address, signature).await;
+    let connection = &mut establish_pgdb_connection().await;
+    let results = customers
+        .filter(schema::customers::c_xmr_address.eq(&sig_address))
+        .load::<models::Customer>(connection);
+    match results {
+        Ok(r) => {
+            if &r.len() >= &0 {
+                sig_address.to_string()
+            } else {
+                println!("Creating new customer");
+                create_customer(connection, &sig_address, "", "").await;
+                sig_address.to_string()
+            }
+        }
+        _=> {
+            println!("Error creating customer.");
+            ApplicationErrors::CreateCustomerError.to_string()
+        }
+    }
 }
 // END PGDB stuff
 
