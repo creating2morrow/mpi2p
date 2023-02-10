@@ -6,17 +6,12 @@ use mpi2p::*;
 
 /*
  TODO:
-   - modularize json vs. html template injection
-   - logger
    - md5 digest auth module
-   - cmd line args
-   - verify signature API for login
    - get_customer
    - update_customer
    - create_product
    - get_product
    - update_product
-   - create_vendor
    - get_vendor
    - update_vendor
    - create_order
@@ -52,10 +47,11 @@ async fn login_vendor(address: String, signature: String) -> String {
 
 #[launch]
 async fn rocket() -> _ {
-    // i2p (WIP), pdgb and monero-wallet-rpc are required to be up at boot time
+    // pdgb and monero-wallet-rpc are required to be up at boot time
     establish_pgdb_connection().await;
     check_xmr_rpc_connection().await;
     // TODO: check_i2p_connection().await;
+    log(LogLevel::INFO, "mpi2p is online").await;
     rocket::build()
         .mount("/customer", routes![login_customer])
         .mount("/vendor", routes![login_vendor])

@@ -1,12 +1,15 @@
 pub mod models;
 pub mod schema;
 pub mod reqres;
+
+use std::env;
+use chrono;
+use dotenv::dotenv;
 use self::models::*;
+use clap:: Parser;
+use diesel::prelude::*;
 use std::fmt::{self, Debug};
 use diesel::pg::PgConnection;
-use diesel::prelude::*;
-use dotenv::dotenv;
-use std::env;
 
 // TODO: random data for each login?
 const LOGIN_DATA: &str = "LOGIN";
@@ -25,8 +28,55 @@ impl fmt::Display for ApplicationErrors {
     }
 }
 
-// TODO: cmd line args
-const XMR_RPC_HOST: &str = "http://127.0.0.1:38083/json_rpc";
+// logger
+#[derive(Debug, Clone)]
+pub enum LogLevel {
+    DEBUG,
+    ERROR,
+    INFO,
+    WARN,
+}
+
+impl fmt::Display for LogLevel {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+pub async fn log(level: LogLevel, msg: &str) -> () {
+    let args = Args::parse();
+    let set_level = args.log_level.split(",");
+    let vec: Vec<String> = set_level.map(|s| s.to_string()).collect();
+    if vec.contains(&level.to_string()) {
+        println!(
+            "{}", format!("|{:?}| |{:?}| =>  {}", level, chrono::offset::Utc::now(), msg)
+        );
+    }
+}
+// END logger stuff
+
+// cmd line args
+#[derive(Parser, Default, Debug)]
+#[command(author, version, about, long_about = None)]
+pub struct Args {
+   /// Monero RPC HOST
+   #[arg(short, long)]
+   monero_rpc_host: String,
+   /// Log Level
+   #[arg(short,
+        long,
+        help = "Comma separated log level e.g. <WARN,INFO...>",
+        default_value = "ERROR,INFO",
+    )]
+   log_level: String
+}
+// end cmd line args
+
+fn get_monero_rpc_host () -> String {
+    let args = Args::parse();
+    let rpc = args.monero_rpc_host.to_string();
+    format!("{}/json_rpc", rpc)
+}
 
 // PGDB stuff
 pub async fn establish_pgdb_connection() -> PgConnection {
@@ -74,13 +124,13 @@ pub async fn verify_customer_login(address: String, signature: String) -> String
                 let result: &str = &r[0].c_xmr_address;
                 result.to_string()
             } else {
-                println!("Creating new customer");
+                log(LogLevel::INFO, "Creating new customer").await;
                 create_customer(connection, &sig_address, "", "").await;
                 sig_address.to_string()
             }
         }
         _=> {
-            println!("Error creating customer.");
+            log(LogLevel::ERROR, "Error creating customer.").await;
             ApplicationErrors::CreateCustomerError.to_string()
         }
     }
@@ -99,13 +149,13 @@ pub async fn verify_vendor_login(address: String, signature: String) -> String {
                 let result: &str = &r[0].v_xmr_address;
                 result.to_string()
             } else {
-                println!("Creating new vendor");
+                log(LogLevel::INFO, "Creating new vendor").await;
                 create_vendor(connection, &sig_address, "", "", "", &false).await;
                 sig_address.to_string()
             }
         }
         _=> {
-            println!("Error creating vendor.");
+            log(LogLevel::ERROR, "Error creating vendor.").await;
             ApplicationErrors::CreateVendorError.to_string()
         }
     }
@@ -115,13 +165,13 @@ pub async fn verify_vendor_login(address: String, signature: String) -> String {
 // XMR RPC stuff
 pub async fn get_xmr_version() -> String {
     let client = reqwest::Client::new();
-    let net = XMR_RPC_HOST.to_string();
+    let host = get_monero_rpc_host();
     let req = reqres::XmrRpcVersionRequest { 
         jsonrpc: "2.0".to_string(), 
         id: "0".to_string(), 
         method: "get_version".to_string()
     };
-    match client.post(net).json(&req).send().await
+    match client.post(host).json(&req).send().await
     {
         Ok(response) => {
             let res = response.json::<reqres::XmrRpcVersionResponse>().await;
@@ -145,7 +195,7 @@ pub async fn check_xmr_rpc_connection() -> () {
 
 pub async fn verify_signature(address: String, signature: String) -> String {
     let client = reqwest::Client::new();
-    let net = XMR_RPC_HOST.to_string();
+    let host = get_monero_rpc_host();
     let params = reqres::XmrRpcVerifyParams {
         address,
         data: LOGIN_DATA.to_string(),
@@ -157,7 +207,7 @@ pub async fn verify_signature(address: String, signature: String) -> String {
         method: "verify".to_string(),
         params,
     };
-    match client.post(net).json(&req).send().await
+    match client.post(host).json(&req).send().await
     {
         Ok(response) => {
             let res = response.json::<reqres::XmrRpcVerifyResponse>().await;
