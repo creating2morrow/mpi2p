@@ -39,8 +39,9 @@ diesel::table! {
     vendors (id) {
         id -> Int4,
         v_xmr_address -> Varchar,
-        v_display_name -> Varchar,
+        v_name -> Varchar,
         v_description -> Text,
+        v_pgp -> Text,
         active -> Bool,
     }
 }

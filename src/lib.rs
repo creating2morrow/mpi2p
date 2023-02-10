@@ -14,6 +14,7 @@ const LOGIN_DATA: &str = "LOGIN";
 #[derive(Debug)]
 enum ApplicationErrors {
     CreateCustomerError,
+    CreateVendorError,
     XmrRpcVersionError,
     XmrVerifyError,
 }
@@ -35,13 +36,29 @@ pub async fn establish_pgdb_connection() -> PgConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-async fn create_customer(conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str) -> Customer {
+async fn create_customer(
+    conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str
+) -> Customer {
     use crate::schema::customers;
     let new_customer = NewCustomer { c_xmr_address, c_name, c_pgp };
     diesel::insert_into(customers::table)
         .values(&new_customer)
         .get_result(conn)
         .expect("Error saving new customer")
+}
+
+async fn create_vendor(
+    conn: &mut PgConnection, v_xmr_address: &str, v_name: &str, v_pgp: &str,
+    v_description: &str, active: &bool
+) -> Vendor {
+    use crate::schema::vendors;
+    let new_vendor = NewVendor {
+        v_xmr_address, v_name, v_description, v_pgp, active 
+    };
+    diesel::insert_into(vendors::table)
+        .values(&new_vendor)
+        .get_result(conn)
+        .expect("Error saving new vendor")
 }
 
 pub async fn verify_customer_login(address: String, signature: String) -> String {
@@ -53,8 +70,9 @@ pub async fn verify_customer_login(address: String, signature: String) -> String
         .load::<models::Customer>(connection);
     match results {
         Ok(r) => {
-            if &r.len() >= &0 {
-                sig_address.to_string()
+            if &r.len() > &0 {
+                let result: &str = &r[0].c_xmr_address;
+                result.to_string()
             } else {
                 println!("Creating new customer");
                 create_customer(connection, &sig_address, "", "").await;
@@ -67,12 +85,37 @@ pub async fn verify_customer_login(address: String, signature: String) -> String
         }
     }
 }
+
+pub async fn verify_vendor_login(address: String, signature: String) -> String {
+    use self::schema::vendors::dsl::*;
+    let sig_address: String = verify_signature(address, signature).await;
+    let connection = &mut establish_pgdb_connection().await;
+    let results = vendors
+        .filter(schema::vendors::v_xmr_address.eq(&sig_address))
+        .load::<models::Vendor>(connection);
+    match results {
+        Ok(r) => {
+            if &r.len() > &0 {
+                let result: &str = &r[0].v_xmr_address;
+                result.to_string()
+            } else {
+                println!("Creating new vendor");
+                create_vendor(connection, &sig_address, "", "", "", &false).await;
+                sig_address.to_string()
+            }
+        }
+        _=> {
+            println!("Error creating vendor.");
+            ApplicationErrors::CreateVendorError.to_string()
+        }
+    }
+}
 // END PGDB stuff
 
 // XMR RPC stuff
 pub async fn get_xmr_version() -> String {
     let client = reqwest::Client::new();
-    let net = XMR_RPC_HOST.to_string(); // TODO: this as cmd line arg
+    let net = XMR_RPC_HOST.to_string();
     let req = reqres::XmrRpcVersionRequest { 
         jsonrpc: "2.0".to_string(), 
         id: "0".to_string(), 
