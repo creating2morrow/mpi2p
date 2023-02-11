@@ -163,7 +163,7 @@ pub async fn verify_vendor_login(address: String, signature: String) -> String {
 // END PGDB stuff
 
 // XMR RPC stuff
-pub async fn get_xmr_version() -> String {
+pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
     let client = reqwest::Client::new();
     let host = get_monero_rpc_host();
     let req = reqres::XmrRpcVersionRequest { 
@@ -176,19 +176,23 @@ pub async fn get_xmr_version() -> String {
         Ok(response) => {
             let res = response.json::<reqres::XmrRpcVersionResponse>().await;
             match res {
-                Ok(res) => format!("{{ \"version\": {} }}", res.result.version),
-                _=> ApplicationErrors::XmrRpcVersionError.to_string()
+                Ok(res) => res,
+                _=> reqres::XmrRpcVersionResponse { 
+                    result: reqres::XmrRpcVersionResult { version: 0 } 
+                }
             }
         }
         Err(_e) => {
-            ApplicationErrors::XmrRpcVersionError.to_string()
+            reqres::XmrRpcVersionResponse { 
+                result: reqres::XmrRpcVersionResult { version: 0 } 
+            }
         }
     }
 }
 
 pub async fn check_xmr_rpc_connection() -> () {
-    let ver: String = get_xmr_version().await;
-    if ver == ApplicationErrors::XmrRpcVersionError.to_string() {
+    let res: reqres::XmrRpcVersionResponse = get_xmr_version().await;
+    if res.result.version == 0 {
         panic!("Failed to connect to monero-wallet-rpc");
     }
 }

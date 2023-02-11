@@ -1,4 +1,9 @@
 use serde::{Deserialize, Serialize};
+use std::io::Cursor;
+
+use rocket::request::Request;
+use rocket::response::{self, Response, Responder};
+use rocket::http::ContentType;
 
 // All http requests and responses are here
 
@@ -29,6 +34,12 @@ pub struct XmrRpcVerifyRequest {
 
 #[derive(Deserialize, Debug)]
 pub struct XmrRpcVersionResult {
+    pub version: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct XmrApiVersionResponse {
     pub version: i32,
 }
 

@@ -1,4 +1,5 @@
 #[macro_use] extern crate rocket;
+use rocket::serde::json::{Json};
 
 use mpi2p::*;
 
@@ -29,8 +30,9 @@ use mpi2p::*;
 
 // JSON APIs
 #[get("/version")]
-async fn get_version() -> String {
-    get_xmr_version().await
+async fn get_version() -> Json<reqres::XmrApiVersionResponse> {
+    let res: reqres::XmrRpcVersionResponse = get_xmr_version().await;
+    Json(reqres::XmrApiVersionResponse { version: res.result.version })
 }
 
 // TODO: use enum to have a single login entry point

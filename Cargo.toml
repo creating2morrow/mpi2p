@@ -10,5 +10,5 @@ clap = { version = "4.1.4", features = ["derive"] }
 diesel = { version = "2.0.0", features = ["postgres"] }
 dotenv = "0.15"
 reqwest = { version = "0.11.12", features = ["blocking", "json"] }
-rocket = { path = "../mpi2p/core/lib" }
-serde = "1.0.147"
+rocket = { version = "0.5.0-rc.2", features = ["json"] }
+serde = { version = "1.0", features = ["derive"] }
