@@ -18,7 +18,6 @@ const LOGIN_DATA: &str = "LOGIN";
 enum ApplicationErrors {
     CreateCustomerError,
     CreateVendorError,
-    XmrRpcVersionError,
     XmrVerifyError,
 }
 
@@ -218,7 +217,7 @@ pub async fn verify_signature(address: String, signature: String) -> String {
             match res {
                 Ok(res) => {
                     if res.result.good {
-                        format!("{{ \"address\": {} }}", &req.params.address)
+                        req.params.address
                     } else {
                         ApplicationErrors::XmrVerifyError.to_string()
                     }

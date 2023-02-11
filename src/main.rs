@@ -37,13 +37,19 @@ async fn get_version() -> Json<reqres::XmrApiVersionResponse> {
 
 // TODO: use enum to have a single login entry point
 #[get("/login/<address>/<signature>")]
-async fn login_customer(address: String, signature: String) -> String {
-    verify_customer_login(address, signature).await
+async fn login_customer(
+    address: String, signature: String
+) -> Json<reqres::XmrApiVerifyResponse> {
+    let address = verify_customer_login(address, signature).await;
+    Json(reqres::XmrApiVerifyResponse { address })
 }
 
 #[get("/login/<address>/<signature>")]
-async fn login_vendor(address: String, signature: String) -> String {
-    verify_vendor_login(address, signature).await
+async fn login_vendor(
+    address: String, signature: String
+) -> Json<reqres::XmrApiVerifyResponse> {
+    let address = verify_vendor_login(address, signature).await;
+    Json(reqres::XmrApiVerifyResponse { address })
 }
 // END JSON APIs
 

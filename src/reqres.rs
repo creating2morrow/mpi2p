@@ -1,15 +1,16 @@
 use serde::{Deserialize, Serialize};
-use std::io::Cursor;
-
-use rocket::request::Request;
-use rocket::response::{self, Response, Responder};
-use rocket::http::ContentType;
 
 // All http requests and responses are here
 
 #[derive(Deserialize, Debug)]
 pub struct XmrRpcVerifyResult {
     pub good: bool,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct XmrApiVerifyResponse {
+    pub address: String,
 }
 
 #[derive(Deserialize, Debug)]
