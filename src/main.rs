@@ -1,5 +1,7 @@
 #[macro_use] extern crate rocket;
 use rocket::serde::json::{Json};
+use rocket::response::status::Custom;
+use rocket::http::Status;
 
 use mpi2p::*;
 
@@ -7,7 +9,7 @@ use mpi2p::*;
 
 /*
  TODO:
-   - md5 digest auth module
+   - error handling for json response
    - get_customer
    - update_customer
    - create_product
@@ -30,26 +32,21 @@ use mpi2p::*;
 
 // JSON APIs
 #[get("/version")]
-async fn get_version() -> Json<reqres::XmrApiVersionResponse> {
+async fn get_version() -> Custom<Json<reqres::XmrApiVersionResponse>> {
     let res: reqres::XmrRpcVersionResponse = get_xmr_version().await;
-    Json(reqres::XmrApiVersionResponse { version: res.result.version })
+    let version: i32 = res.result.version;
+    Custom(Status { code: 200 }, Json(reqres::XmrApiVersionResponse { version }))
 }
 
-// TODO: use enum to have a single login entry point
-#[get("/login/<address>/<signature>")]
-async fn login_customer(
-    address: String, signature: String
-) -> Json<reqres::XmrApiVerifyResponse> {
-    let address = verify_customer_login(address, signature).await;
-    Json(reqres::XmrApiVerifyResponse { address })
-}
-
-#[get("/login/<address>/<signature>")]
-async fn login_vendor(
-    address: String, signature: String
-) -> Json<reqres::XmrApiVerifyResponse> {
-    let address = verify_vendor_login(address, signature).await;
-    Json(reqres::XmrApiVerifyResponse { address })
+#[get("/login/<corv>/<address>/<signature>")]
+async fn login(address: String, corv: String, signature: String) -> Custom<Json<reqres::XmrApiVerifyResponse>> {
+    let r_address: String = get_login_address(address, corv, signature).await;
+    let badreq = "".to_string();
+    if r_address == ApplicationErrors::LoginError.to_string() {
+        Custom(Status::BadRequest, Json(reqres::XmrApiVerifyResponse { address: badreq }))
+    } else {
+        Custom(Status { code: 200 }, Json(reqres::XmrApiVerifyResponse { address: r_address }))
+    }
 }
 // END JSON APIs
 
@@ -61,7 +58,6 @@ async fn rocket() -> _ {
     // TODO: check_i2p_connection().await;
     log(LogLevel::INFO, "mpi2p is online").await;
     rocket::build()
-        .mount("/customer", routes![login_customer])
-        .mount("/vendor", routes![login_vendor])
+        .mount("/", routes![login])
         .mount("/xmr", routes![get_version])
 }

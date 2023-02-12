@@ -15,15 +15,28 @@ use diesel::pg::PgConnection;
 const LOGIN_DATA: &str = "LOGIN";
 
 #[derive(Debug)]
-enum ApplicationErrors {
-    CreateCustomerError,
-    CreateVendorError,
-    XmrVerifyError,
+pub enum ApplicationErrors {
+    LoginError,
+}
+
+#[derive(Debug)]
+pub enum LoginType {
+    Customer,
+    Vendor,
 }
 
 impl fmt::Display for ApplicationErrors {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
+    }
+}
+
+impl LoginType {
+    pub fn value(&self) -> String {
+        match *self {
+            LoginType::Customer => "customer".to_string(),
+            LoginType::Vendor => "vendor".to_string(),
+        }
     }
 }
 
@@ -114,6 +127,9 @@ pub async fn verify_customer_login(address: String, signature: String) -> String
     use self::schema::customers::dsl::*;
     let sig_address: String = verify_signature(address, signature).await;
     let connection = &mut establish_pgdb_connection().await;
+    if sig_address == ApplicationErrors::LoginError.to_string() {
+        return sig_address;
+    }
     let results = customers
         .filter(schema::customers::c_xmr_address.eq(&sig_address))
         .load::<models::Customer>(connection);
@@ -130,7 +146,7 @@ pub async fn verify_customer_login(address: String, signature: String) -> String
         }
         _=> {
             log(LogLevel::ERROR, "Error creating customer.").await;
-            ApplicationErrors::CreateCustomerError.to_string()
+            ApplicationErrors::LoginError.to_string()
         }
     }
 }
@@ -155,7 +171,7 @@ pub async fn verify_vendor_login(address: String, signature: String) -> String {
         }
         _=> {
             log(LogLevel::ERROR, "Error creating vendor.").await;
-            ApplicationErrors::CreateVendorError.to_string()
+            ApplicationErrors::LoginError.to_string()
         }
     }
 }
@@ -219,15 +235,24 @@ pub async fn verify_signature(address: String, signature: String) -> String {
                     if res.result.good {
                         req.params.address
                     } else {
-                        ApplicationErrors::XmrVerifyError.to_string()
+                        ApplicationErrors::LoginError.to_string()
                     }
                 }
-                _=> ApplicationErrors::XmrVerifyError.to_string()
+                _=> ApplicationErrors::LoginError.to_string()
             }
         }
         Err(_e) => {
-            ApplicationErrors::XmrVerifyError.to_string()
+            ApplicationErrors::LoginError.to_string()
         }
     }
 }
 // END XMR RPC stuff
+
+// misc helpers
+pub async fn get_login_address(address: String, corv: String, signature: String) -> String {
+    if corv == LoginType::Customer.value() {
+        verify_customer_login(address, signature).await
+    } else {
+        verify_vendor_login(address, signature).await
+    }
+}
