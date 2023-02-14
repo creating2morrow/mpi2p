@@ -37,15 +37,6 @@ pub struct NewCustomer<'a> {
     pub c_pgp: &'a str,
 }
 
-/*
-        id -> Int4,
-        v_xmr_address -> Varchar,
-        v_name -> Varchar,
-        v_description -> Text,
-        v_pgp -> Text,
-        active -> Bool,
-*/
-
 #[derive(Insertable)]
 #[diesel(table_name = schema::vendors)]
 pub struct NewVendor<'a> {

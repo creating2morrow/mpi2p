@@ -19,16 +19,16 @@ pub enum ApplicationErrors {
     LoginError,
 }
 
-#[derive(Debug)]
-pub enum LoginType {
-    Customer,
-    Vendor,
-}
-
 impl fmt::Display for ApplicationErrors {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:?}", self)
     }
+}
+
+#[derive(Debug)]
+pub enum LoginType {
+    Customer,
+    Vendor,
 }
 
 impl LoginType {
@@ -36,6 +36,26 @@ impl LoginType {
         match *self {
             LoginType::Customer => "customer".to_string(),
             LoginType::Vendor => "vendor".to_string(),
+        }
+    }
+}
+
+
+#[derive(Debug)]
+pub enum UpdateType {
+    Active,
+    Description,
+    Name,
+    Pgp,
+}
+
+impl UpdateType {
+    pub fn value(&self) -> i32 {
+        match *self {
+            UpdateType::Active => 0,
+            UpdateType::Description => 1,
+            UpdateType::Name => 2,
+            UpdateType::Pgp => 3,
         }
     }
 }
@@ -71,24 +91,24 @@ pub async fn log(level: LogLevel, msg: &str) -> () {
 #[derive(Parser, Default, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-   /// Monero RPC HOST
-   #[arg(short, long)]
-   monero_rpc_host: String,
-   /// Log Level
-   #[arg(short,
+    /// Log Level
+   #[arg(
+        short,
         long,
         help = "Comma separated log level e.g. <WARN,INFO...>",
         default_value = "ERROR,INFO",
     )]
-   log_level: String
+   log_level: String,
+   /// Monero RPC HOST
+   #[arg(
+        short,
+        long,
+        help = "Monero RPC host.",
+        default_value = "http://localhost:38083",
+   )]
+   monero_rpc_host: String,
 }
 // end cmd line args
-
-fn get_monero_rpc_host () -> String {
-    let args = Args::parse();
-    let rpc = args.monero_rpc_host.to_string();
-    format!("{}/json_rpc", rpc)
-}
 
 // PGDB stuff
 pub async fn establish_pgdb_connection() -> PgConnection {
@@ -107,6 +127,42 @@ async fn create_customer(
         .values(&new_customer)
         .get_result(conn)
         .expect("Error saving new customer")
+}
+
+pub async fn find_customer(address: String) -> Customer {
+    use self::schema::customers::dsl::*;
+    let connection = &mut establish_pgdb_connection().await;
+    let results = customers
+        .filter(schema::customers::c_xmr_address.eq(address))
+        .load::<models::Customer>(connection);
+    match results {
+        Ok(mut r) => {
+            if &r.len() > &0 { r.remove(0) }
+            else { get_default_customer() }
+        },
+        _=> {
+                log(LogLevel::ERROR, "Error finding customer.").await;
+                get_default_customer()
+            }
+    }
+}
+
+pub async fn find_vendor(address: String) -> Vendor {
+    use self::schema::vendors::dsl::*;
+    let connection = &mut establish_pgdb_connection().await;
+    let results = vendors
+        .filter(schema::vendors::v_xmr_address.eq(address))
+        .load::<models::Vendor>(connection);
+    match results {
+        Ok(mut r) => {
+            if &r.len() > &0 { r.remove(0) }
+            else { get_default_vendor() }
+        },
+        _=> {
+                log(LogLevel::ERROR, "Error finding vendor.").await;
+                get_default_vendor()
+            }
+    }
 }
 
 async fn create_vendor(
@@ -174,6 +230,72 @@ pub async fn verify_vendor_login(address: String, signature: String) -> String {
             ApplicationErrors::LoginError.to_string()
         }
     }
+}
+
+pub async fn modify_customer(_id: i32, data: String, update_type: i32) -> Customer {
+    use self::schema::customers::dsl::*;
+    let connection = &mut establish_pgdb_connection().await;
+    if update_type == UpdateType::Name.value() {
+        let m = diesel::update(customers.find(_id))
+            .set(c_name.eq(data))
+            .get_result::<Customer>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_customer()
+        };
+    }
+    else if update_type == UpdateType::Pgp.value() {
+        let m = diesel::update(customers.find(id))
+            .set(c_pgp.eq(data))
+            .get_result::<Customer>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_customer()
+        };
+    }
+    get_default_customer()
+}
+
+pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
+    use self::schema::vendors::dsl::*;
+    let connection = &mut establish_pgdb_connection().await;
+    if update_type == UpdateType::Active.value() {
+        let m = diesel::update(vendors.find(_id))
+            .set(active.eq(true))
+            .get_result::<Vendor>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_vendor()
+        };
+    }
+    else if update_type == UpdateType::Description.value() {
+        let m = diesel::update(vendors.find(_id))
+            .set(v_description.eq(data))
+            .get_result::<Vendor>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_vendor()
+        };
+    }
+    else if update_type == UpdateType::Name.value() {
+        let m = diesel::update(vendors.find(_id))
+            .set(v_name.eq(data))
+            .get_result::<Vendor>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_vendor()
+        };
+    }
+    else if update_type == UpdateType::Pgp.value() {
+        let m = diesel::update(vendors.find(_id))
+            .set(v_pgp.eq(data))
+            .get_result::<Vendor>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_vendor()
+        };
+    }
+    get_default_vendor()
 }
 // END PGDB stuff
 
@@ -256,3 +378,30 @@ pub async fn get_login_address(address: String, corv: String, signature: String)
         verify_vendor_login(address, signature).await
     }
 }
+
+fn get_monero_rpc_host() -> String {
+    let args = Args::parse();
+    let rpc = args.monero_rpc_host.to_string();
+    format!("{}/json_rpc", rpc)
+}
+
+fn get_default_customer() -> Customer {
+    Customer { 
+        id: 0,
+        c_xmr_address: "".to_string(),
+        c_name: "".to_string(),
+        c_pgp: "".to_string(),
+    }
+}
+
+fn get_default_vendor() -> Vendor {
+    Vendor { 
+        id: 0,
+        v_xmr_address: "".to_string(),
+        v_name: "".to_string(),
+        v_description: "".to_string(),
+        v_pgp: "".to_string(),
+        active: false,
+    }
+}
+// END misc. helpers

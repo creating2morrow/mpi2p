@@ -55,3 +55,23 @@ pub struct XmrRpcVersionRequest {
     pub id: String,
     pub method: String,
 }
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct GetCustomerResponse {
+    pub address: String,
+    pub id: i32,
+    pub name: String,
+    pub pgp: String,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct GetVendorResponse {
+    pub active: bool,
+    pub address: String,
+    pub description: String,
+    pub id: i32,
+    pub name: String,
+    pub pgp: String,
+}
