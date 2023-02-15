@@ -5,6 +5,8 @@ use rocket::http::Status;
 
 use mpi2p::*;
 
+extern crate schedule_recv;
+
 #[cfg(test)] mod tests;
 
 /*
@@ -86,7 +88,7 @@ async fn rocket() -> _ {
     // pdgb and monero-wallet-rpc are required to be up at boot time
     establish_pgdb_connection().await;
     check_xmr_rpc_connection().await;
-    check_i2p_connection().await;
+    // check_i2p_connection().await;
     log(LogLevel::INFO, "mpi2p is online").await;
     rocket::build()
         .mount("/", routes![login])
