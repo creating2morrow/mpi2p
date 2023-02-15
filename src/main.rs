@@ -11,7 +11,6 @@ extern crate schedule_recv;
 
 /*
  TODO:
-   - i2p connection check / interval
    - create_product
    - get_product
    - update_product
@@ -88,11 +87,15 @@ async fn rocket() -> _ {
     // pdgb and monero-wallet-rpc are required to be up at boot time
     establish_pgdb_connection().await;
     check_xmr_rpc_connection().await;
-    // check_i2p_connection().await;
+    if is_i2p_check_enabled() {
+        check_i2p_connection().await;
+    }
     log(LogLevel::INFO, "mpi2p is online").await;
     rocket::build()
         .mount("/", routes![login])
         .mount("/customer", routes![get_customer, update_customer])
         .mount("/vendor", routes![get_vendor, update_vendor])
+        // .mount("/product", routes![get_product, update_product])
+        // .mount("/order", routes![get_order, update_order])
         .mount("/xmr", routes![get_version])
 }

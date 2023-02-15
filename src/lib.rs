@@ -107,6 +107,14 @@ pub async fn log(level: LogLevel, msg: &str) -> () {
 #[derive(Parser, Default, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
+    /// check i2p
+   #[arg(
+        short,
+        long,
+        help = "Disable i2p connection check",
+        default_value = "false",
+    )]
+   disable_i2p_check: bool,
     /// Log Level
    #[arg(
         short,
@@ -451,6 +459,11 @@ fn get_monero_rpc_host() -> String {
     let args = Args::parse();
     let rpc = args.monero_rpc_host.to_string();
     format!("{}/json_rpc", rpc)
+}
+
+pub fn is_i2p_check_enabled() -> bool {
+    let args = Args::parse();
+    !args.disable_i2p_check
 }
 
 fn get_default_customer() -> Customer {
