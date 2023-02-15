@@ -10,8 +10,6 @@ use mpi2p::*;
 /*
  TODO:
    - i2p connection check / interval
-   - update_customer
-   - update_vendor
    - create_product
    - get_product
    - update_product
@@ -88,7 +86,7 @@ async fn rocket() -> _ {
     // pdgb and monero-wallet-rpc are required to be up at boot time
     establish_pgdb_connection().await;
     check_xmr_rpc_connection().await;
-    // TODO: check_i2p_connection().await;
+    check_i2p_connection().await;
     log(LogLevel::INFO, "mpi2p is online").await;
     rocket::build()
         .mount("/", routes![login])

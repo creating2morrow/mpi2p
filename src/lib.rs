@@ -81,7 +81,7 @@ pub async fn log(level: LogLevel, msg: &str) -> () {
     let vec: Vec<String> = set_level.map(|s| s.to_string()).collect();
     if vec.contains(&level.to_string()) {
         println!(
-            "{}", format!("|{:?}| |{:?}| =>  {}", level, chrono::offset::Utc::now(), msg)
+            "{}", format!("|{:?}|\t|{:?}| => {}", level, chrono::offset::Utc::now(), msg)
         );
     }
 }
@@ -137,6 +137,7 @@ pub async fn find_customer(address: String) -> Customer {
         .load::<models::Customer>(connection);
     match results {
         Ok(mut r) => {
+            log(LogLevel::INFO, "Found customer.").await;
             if &r.len() > &0 { r.remove(0) }
             else { get_default_customer() }
         },
@@ -155,6 +156,7 @@ pub async fn find_vendor(address: String) -> Vendor {
         .load::<models::Vendor>(connection);
     match results {
         Ok(mut r) => {
+            log(LogLevel::INFO, "Found vendor.").await;
             if &r.len() > &0 { r.remove(0) }
             else { get_default_vendor() }
         },
@@ -236,6 +238,7 @@ pub async fn modify_customer(_id: i32, data: String, update_type: i32) -> Custom
     use self::schema::customers::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     if update_type == UpdateType::Name.value() {
+        log(LogLevel::INFO, "Modify customer name.").await;
         let m = diesel::update(customers.find(_id))
             .set(c_name.eq(data))
             .get_result::<Customer>(connection);
@@ -245,6 +248,7 @@ pub async fn modify_customer(_id: i32, data: String, update_type: i32) -> Custom
         };
     }
     else if update_type == UpdateType::Pgp.value() {
+        log(LogLevel::INFO, "Modify customer PGP.").await;
         let m = diesel::update(customers.find(id))
             .set(c_pgp.eq(data))
             .get_result::<Customer>(connection);
@@ -260,6 +264,7 @@ pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
     use self::schema::vendors::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     if update_type == UpdateType::Active.value() {
+        log(LogLevel::INFO, "Modify vendor active status.").await;
         let m = diesel::update(vendors.find(_id))
             .set(active.eq(true))
             .get_result::<Vendor>(connection);
@@ -269,6 +274,7 @@ pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
         };
     }
     else if update_type == UpdateType::Description.value() {
+        log(LogLevel::INFO, "Modify vendor description.").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_description.eq(data))
             .get_result::<Vendor>(connection);
@@ -278,6 +284,7 @@ pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
         };
     }
     else if update_type == UpdateType::Name.value() {
+        log(LogLevel::INFO, "Modify vendor name.").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_name.eq(data))
             .get_result::<Vendor>(connection);
@@ -287,6 +294,7 @@ pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
         };
     }
     else if update_type == UpdateType::Pgp.value() {
+        log(LogLevel::INFO, "Modify vendor pgp.").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_pgp.eq(data))
             .get_result::<Vendor>(connection);
@@ -335,6 +343,7 @@ pub async fn check_xmr_rpc_connection() -> () {
 }
 
 pub async fn verify_signature(address: String, signature: String) -> String {
+    log(LogLevel::INFO, "Signature verification in progress.").await;
     let client = reqwest::Client::new();
     let host = get_monero_rpc_host();
     let params = reqres::XmrRpcVerifyParams {
@@ -369,6 +378,27 @@ pub async fn verify_signature(address: String, signature: String) -> String {
     }
 }
 // END XMR RPC stuff
+
+// i2p connection verification
+pub async fn check_i2p_connection() -> () {
+    let client = reqwest::Client::new();
+    let host = "http://localhost:7657/tunnels";
+    match client.get(host).send().await
+    {
+        Ok(response) => {
+            // do some parsing here to check the status
+            let res = response.text().await;
+            match res {
+                Ok(res) => log(LogLevel::ERROR, &res).await,
+                _=> log(LogLevel::ERROR, "I2P status check failure.").await
+            }
+        }
+        Err(_e) => {
+            log(LogLevel::ERROR, "I2P status check failure.").await;
+        }
+    }
+}
+// END I2P connection verification
 
 // misc helpers
 pub async fn get_login_address(address: String, corv: String, signature: String) -> String {
