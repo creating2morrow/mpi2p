@@ -8,14 +8,14 @@ pub struct Customer {
     pub c_pgp: String,
 }
 
-#[derive(Queryable)]
-pub struct Order {
-    pub id: i32,
-    pub c_id: String,
-    pub p_id: String,
-    pub o_date: i32,
-    pub o_hash: String,
-}
+// #[derive(Queryable)]
+// pub struct Order {
+//     pub id: i32,
+//     pub c_id: String,
+//     pub p_id: String,
+//     pub o_date: i32,
+//     pub o_hash: String,
+// }
 
 #[derive(Queryable, Debug)]
 pub struct Vendor {
@@ -25,6 +25,16 @@ pub struct Vendor {
     pub v_description: String,
     pub v_pgp: String,
     pub active: bool,
+}
+
+#[derive(Queryable, Debug)]
+pub struct Product {
+    pub id: i32,
+    pub fk_vendor: i32,
+    pub in_stock: bool,
+    pub p_description: String,
+    pub p_name: String,
+    pub price: String,
 }
 
 use crate::schema;
@@ -45,4 +55,15 @@ pub struct NewVendor<'a> {
     pub v_description: &'a str,
     pub v_pgp: &'a str,
     pub active: &'a bool,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = schema::products)]
+pub struct NewProduct<'a> {
+    pub v_id: &'a i32,
+    pub in_stock: &'a bool,
+    pub p_description: &'a str,
+    pub p_name: &'a str,
+    pub p_price: &'a i32,
+    pub qty: &'a i32,
 }

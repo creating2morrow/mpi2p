@@ -30,3 +30,20 @@ i2p marketplace api standards bootstrap
 * wallet signing for login (see api.sh) for sample CURL requests
 * multisignature wallets to secure and release funds per order
 * start monero-wallet-rpc e.g `./monero-x86_64-linux-gnu-v0.18.1.2/monero-wallet-rpc --rpc-bind-port 38083 --stagenet --wallet-file Monero/test --disable-rpc-login --prompt-for-password  --daemon-address  http://stagenet.xmr-tw.org:38081`
+
+## API Examples
+
+* see `api.sh`
+* <in progress>: swagger open api
+
+## Order Lifecycle
+
+* vendor adds a new product with description and price
+* customer orders product
+* app initiates multisig account creation for order
+* customer and vendor exchange keys with app
+* customer funds multisig wallet
+* vendor ships
+* customer recieves product and signs multisig transaction
+* vendors signs and submits multisig transaction
+* disputes handled on case-by-case basis, app can sign disputes only

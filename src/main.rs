@@ -5,8 +5,6 @@ use rocket::http::Status;
 
 use mpi2p::*;
 
-extern crate schedule_recv;
-
 #[cfg(test)] mod tests;
 
 /*
@@ -34,7 +32,8 @@ async fn get_version() -> Custom<Json<reqres::XmrApiVersionResponse>> {
 async fn get_customer(address: String) -> Custom<Json<reqres::GetCustomerResponse>> {
     let m_customer: models::Customer = find_customer(address).await;
     let res: reqres::GetCustomerResponse = reqres::GetCustomerResponse {
-        id: m_customer.id, address: m_customer.c_xmr_address, name: m_customer.c_name, pgp: m_customer.c_pgp,
+        id: m_customer.id, address: m_customer.c_xmr_address,
+        name: m_customer.c_name, pgp: m_customer.c_pgp,
     };
     Custom(Status::Accepted, Json(res))
 }
@@ -44,12 +43,14 @@ async fn get_customer(address: String) -> Custom<Json<reqres::GetCustomerRespons
 async fn get_vendor(address: String) -> Custom<Json<reqres::GetVendorResponse>> {
     let m_vendor: models::Vendor = find_vendor(address).await;
     let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
-        id: m_vendor.id, active: m_vendor.active, address: m_vendor.v_xmr_address, description: m_vendor.v_description,
+        id: m_vendor.id, active: m_vendor.active, address: m_vendor.v_xmr_address,
+        description: m_vendor.v_description,
         name: m_vendor.v_name,pgp: m_vendor.v_pgp,
     };
     Custom(Status::Accepted, Json(res))
 }
 
+/// Login with wallet signature
 #[get("/login/<corv>/<address>/<signature>")]
 async fn login(address: String, corv: String, signature: String) -> Custom<Json<reqres::XmrApiVerifyResponse>> {
     let r_address: String = get_login_address(address, corv, signature).await;
@@ -61,25 +62,28 @@ async fn login(address: String, corv: String, signature: String) -> Custom<Json<
     }
 }
 
+/// Update customer information
 #[patch("/update/<id>/<data>/<update_type>")]
 async fn update_customer(id: i32, data: String, update_type: i32) -> Custom<Json<reqres::GetCustomerResponse>> {
-        let m_customer: models::Customer = modify_customer(id, data, update_type).await;
-        let res: reqres::GetCustomerResponse = reqres::GetCustomerResponse {
-            id: m_customer.id, address: m_customer.c_xmr_address,
-            name: m_customer.c_name, pgp: m_customer.c_pgp,
-        };
-        Custom(Status::Accepted, Json(res))
+    let m_customer: models::Customer = modify_customer(id, data, update_type).await;
+    let res: reqres::GetCustomerResponse = reqres::GetCustomerResponse {
+        id: m_customer.id, address: m_customer.c_xmr_address,
+        name: m_customer.c_name, pgp: m_customer.c_pgp,
+    };
+    Custom(Status::Accepted, Json(res))
 }
 
+/// Update vendor information
 #[patch("/update/<id>/<data>/<update_type>")]
 async fn update_vendor(id: i32, data: String, update_type: i32) -> Custom<Json<reqres::GetVendorResponse>> {
-        let m_vendor = modify_vendor(id, data, update_type).await;
-        let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
-            id: m_vendor.id, active: m_vendor.active, address: m_vendor.v_xmr_address,
-            description: m_vendor.v_description, name: m_vendor.v_name, pgp: m_vendor.v_pgp,
-        };
-        Custom(Status::Accepted, Json(res))
+    let m_vendor = modify_vendor(id, data, update_type).await;
+    let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
+        id: m_vendor.id, active: m_vendor.active, address: m_vendor.v_xmr_address,
+        description: m_vendor.v_description, name: m_vendor.v_name, pgp: m_vendor.v_pgp,
+    };
+    Custom(Status::Accepted, Json(res))
 }
+
 // END JSON APIs
 
 #[launch]

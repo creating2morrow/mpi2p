@@ -12,6 +12,8 @@ diesel::table! {
 diesel::table! {
     orders (id) {
         id -> Int4,
+        c_id -> Nullable<Int4>,
+        p_id -> Nullable<Int4>,
         o_xmr_address -> Nullable<Varchar>,
         o_date -> Int4,
         o_deliver_date -> Nullable<Int4>,
@@ -22,14 +24,17 @@ diesel::table! {
         o_msig_kex -> Nullable<Text>,
         o_msig_kex_boost -> Nullable<Text>,
         o_status -> Nullable<Text>,
+        o_quantity -> Int4,
     }
 }
 
 diesel::table! {
     products (id) {
         id -> Int4,
+        v_id -> Nullable<Int4>,
+        in_stock -> Bool,
+        p_description -> Text,
         p_name -> Varchar,
-        p_pgp -> Varchar,
         p_price -> Int4,
         qty -> Int4,
     }
@@ -46,9 +51,9 @@ diesel::table! {
     }
 }
 
-diesel::joinable!(orders -> customers (id));
-diesel::joinable!(orders -> products (id));
-diesel::joinable!(products -> vendors (id));
+diesel::joinable!(orders -> customers (c_id));
+diesel::joinable!(orders -> products (p_id));
+diesel::joinable!(products -> vendors (v_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     customers,
