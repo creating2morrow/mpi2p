@@ -42,20 +42,20 @@ impl LoginType {
 }
 
 #[derive(Debug)]
-pub enum UpdateType {
+pub enum VendorUpdateType {
     Active,
     Description,
     Name,
     Pgp,
 }
 
-impl UpdateType {
+impl VendorUpdateType {
     pub fn value(&self) -> i32 {
         match *self {
-            UpdateType::Active => 0,
-            UpdateType::Description => 1,
-            UpdateType::Name => 2,
-            UpdateType::Pgp => 3,
+            VendorUpdateType::Active => 0,
+            VendorUpdateType::Description => 1,
+            VendorUpdateType::Name => 2,
+            VendorUpdateType::Pgp => 3,
         }
     }
 }
@@ -278,7 +278,7 @@ pub async fn verify_vendor_login(address: String, signature: String) -> String {
 pub async fn modify_customer(_id: i32, data: String, update_type: i32) -> Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
-    if update_type == UpdateType::Name.value() {
+    if update_type == VendorUpdateType::Name.value() {
         log(LogLevel::INFO, "Modify customer name.").await;
         let m = diesel::update(customers.find(_id))
             .set(c_name.eq(data))
@@ -288,7 +288,7 @@ pub async fn modify_customer(_id: i32, data: String, update_type: i32) -> Custom
             Err(_e) => get_default_customer()
         };
     }
-    else if update_type == UpdateType::Pgp.value() {
+    else if update_type == VendorUpdateType::Pgp.value() {
         log(LogLevel::INFO, "Modify customer PGP.").await;
         let m = diesel::update(customers.find(id))
             .set(c_pgp.eq(data))
@@ -304,7 +304,7 @@ pub async fn modify_customer(_id: i32, data: String, update_type: i32) -> Custom
 pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
     use self::schema::vendors::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
-    if update_type == UpdateType::Active.value() {
+    if update_type == VendorUpdateType::Active.value() {
         log(LogLevel::INFO, "Modify vendor active status.").await;
         let m = diesel::update(vendors.find(_id))
             .set(active.eq(true))
@@ -314,7 +314,7 @@ pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
             Err(_e) => get_default_vendor()
         };
     }
-    else if update_type == UpdateType::Description.value() {
+    else if update_type == VendorUpdateType::Description.value() {
         log(LogLevel::INFO, "Modify vendor description.").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_description.eq(data))
@@ -324,7 +324,7 @@ pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
             Err(_e) => get_default_vendor()
         };
     }
-    else if update_type == UpdateType::Name.value() {
+    else if update_type == VendorUpdateType::Name.value() {
         log(LogLevel::INFO, "Modify vendor name.").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_name.eq(data))
@@ -334,7 +334,7 @@ pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
             Err(_e) => get_default_vendor()
         };
     }
-    else if update_type == UpdateType::Pgp.value() {
+    else if update_type == VendorUpdateType::Pgp.value() {
         log(LogLevel::INFO, "Modify vendor pgp.").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_pgp.eq(data))
@@ -431,36 +431,35 @@ pub async fn check_i2p_connection() -> () {
     loop {
         tick.recv().unwrap();
         match client.get(host).send().await
-    {
-        Ok(response) => {
-            // do some parsing here to check the status
-            let res = response.text().await;
-            match res {
-                Ok(res) => {
-                    // split the html from the local i2p tunnels page
-                    let split1 = res.split("<h4><span class=\"tunnelBuildStatus\">");
-                    let mut v1: Vec<String> = split1.map(|s| s.to_string()).collect();
-                    let s1 = v1.remove(1);
-                    let v2 = s1.split("</span></h4>");
-                    let mut split2: Vec<String> = v2.map(|s| s.to_string()).collect();
-                    let status: String = split2.remove(0);
-                    if status == I2pStatus::Accept.value() {
-                        log(LogLevel::INFO, "I2P is currently accepting tunnels.").await;
-                        break;
-                    } else if status == I2pStatus::Reject.value() {
-                        log(LogLevel::INFO, "I2P is currently rejecting tunnels.").await;
-                    } else {
-                        log(LogLevel::INFO, "I2P is offline.").await;
-                    }
-                },
-                _=> log(LogLevel::ERROR, "I2P status check failure.").await
+        {
+            Ok(response) => {
+                // do some parsing here to check the status
+                let res = response.text().await;
+                match res {
+                    Ok(res) => {
+                        // split the html from the local i2p tunnels page
+                        let split1 = res.split("<h4><span class=\"tunnelBuildStatus\">");
+                        let mut v1: Vec<String> = split1.map(|s| s.to_string()).collect();
+                        let s1 = v1.remove(1);
+                        let v2 = s1.split("</span></h4>");
+                        let mut split2: Vec<String> = v2.map(|s| s.to_string()).collect();
+                        let status: String = split2.remove(0);
+                        if status == I2pStatus::Accept.value() {
+                            log(LogLevel::INFO, "I2P is currently accepting tunnels.").await;
+                            break;
+                        } else if status == I2pStatus::Reject.value() {
+                            log(LogLevel::INFO, "I2P is currently rejecting tunnels.").await;
+                        } else {
+                            log(LogLevel::INFO, "I2P is offline.").await;
+                        }
+                    },
+                    _=> log(LogLevel::ERROR, "I2P status check failure.").await
+                }
+            }
+            Err(_e) => {
+                log(LogLevel::ERROR, "I2P status check failure.").await;
             }
         }
-        Err(_e) => {
-            log(LogLevel::ERROR, "I2P status check failure.").await;
-        }
-    }
-
     }
 }
 // END I2P connection verification
