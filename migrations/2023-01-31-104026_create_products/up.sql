@@ -1,7 +1,7 @@
 -- Your SQL goes here
 CREATE TABLE products (
   id SERIAL PRIMARY KEY,
-  v_id INT,
+  v_id INT NOT NULL,
   CONSTRAINT fk_vendor
       FOREIGN KEY(v_id) 
 	    REFERENCES vendors(id),

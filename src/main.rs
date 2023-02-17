@@ -84,6 +84,18 @@ async fn update_vendor(id: i32, data: String, update_type: i32) -> Custom<Json<r
     Custom(Status::Accepted, Json(res))
 }
 
+/// Create a product by passing vendor id
+#[get("/create/<v_id>")]
+async fn create_product(v_id: i32) -> Custom<Json<reqres::GetProductResponse>> {
+    let m_product: models::Product = create_new_product(&v_id).await;
+    let res: reqres::GetProductResponse = reqres::GetProductResponse {
+        id: m_product.id, v_id: m_product.v_id, in_stock: m_product.in_stock,
+        description: m_product.p_description, name: m_product.p_name,
+        price: m_product.p_price, qty: m_product.qty,
+    };
+    Custom(Status::Accepted, Json(res))
+}
+
 // END JSON APIs
 
 #[launch]
@@ -99,7 +111,7 @@ async fn rocket() -> _ {
         .mount("/", routes![login])
         .mount("/customer", routes![get_customer, update_customer])
         .mount("/vendor", routes![get_vendor, update_vendor])
-        // .mount("/product", routes![get_product, update_product])
+        .mount("/product", routes![create_product, /*update_product*/])
         // .mount("/order", routes![get_order, update_order])
         .mount("/xmr", routes![get_version])
 }

@@ -31,7 +31,7 @@ diesel::table! {
 diesel::table! {
     products (id) {
         id -> Int4,
-        v_id -> Nullable<Int4>,
+        v_id -> Int4,
         in_stock -> Bool,
         p_description -> Text,
         p_name -> Varchar,

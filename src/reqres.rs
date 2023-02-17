@@ -75,3 +75,15 @@ pub struct GetVendorResponse {
     pub name: String,
     pub pgp: String,
 }
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct GetProductResponse {
+    pub id: i32,
+    pub v_id: i32,
+    pub in_stock: bool,
+    pub description: String,
+    pub name: String,
+    pub price: i32,
+    pub qty: i32,
+}

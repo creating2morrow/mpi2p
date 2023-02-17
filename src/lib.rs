@@ -70,7 +70,7 @@ impl I2pStatus {
     pub fn value(&self) -> String {
         match *self {
             I2pStatus::Accept => "Accepting tunnels".to_string(),
-            I2pStatus::Reject => "Rejecting tunnels".to_string(),
+            I2pStatus::Reject => "Rejecting tunnels: Starting up".to_string(),
         }
     }
 }
@@ -172,6 +172,20 @@ pub async fn find_customer(address: String) -> Customer {
     }
 }
 
+async fn create_vendor(
+    conn: &mut PgConnection, v_xmr_address: &str, v_name: &str, v_pgp: &str,
+    v_description: &str, active: &bool
+) -> Vendor {
+    use crate::schema::vendors;
+    let new_vendor = NewVendor {
+        v_xmr_address, v_name, v_description, v_pgp, active 
+    };
+    diesel::insert_into(vendors::table)
+        .values(&new_vendor)
+        .get_result(conn)
+        .expect("Error saving new vendor")
+}
+
 pub async fn find_vendor(address: String) -> Vendor {
     use self::schema::vendors::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
@@ -191,18 +205,21 @@ pub async fn find_vendor(address: String) -> Vendor {
     }
 }
 
-async fn create_vendor(
-    conn: &mut PgConnection, v_xmr_address: &str, v_name: &str, v_pgp: &str,
-    v_description: &str, active: &bool
-) -> Vendor {
-    use crate::schema::vendors;
-    let new_vendor = NewVendor {
-        v_xmr_address, v_name, v_description, v_pgp, active 
+pub async fn create_new_product(v_id: &i32) -> Product {
+    use crate::schema::products;
+    let connection = &mut establish_pgdb_connection().await;
+    let new_product = NewProduct {
+        v_id,
+        in_stock: &false,
+        p_description: "",
+        p_name: "",
+        p_price: &0,
+        qty: &0,
     };
-    diesel::insert_into(vendors::table)
-        .values(&new_vendor)
-        .get_result(conn)
-        .expect("Error saving new vendor")
+    diesel::insert_into(products::table)
+        .values(&new_product)
+        .get_result(connection)
+        .expect("Error saving new product")
 }
 
 pub async fn verify_customer_login(address: String, signature: String) -> String {
@@ -404,6 +421,8 @@ pub async fn verify_signature(address: String, signature: String) -> String {
 // END XMR RPC stuff
 
 // i2p connection verification
+/// TODO: create a tunnel for the server at initial startup
+/// if one does not exist.
 pub async fn check_i2p_connection() -> () {
     let client = reqwest::Client::new();
     let host = "http://localhost:7657/tunnels";

@@ -30,11 +30,12 @@ pub struct Vendor {
 #[derive(Queryable, Debug)]
 pub struct Product {
     pub id: i32,
-    pub fk_vendor: i32,
+    pub v_id: i32,
     pub in_stock: bool,
     pub p_description: String,
     pub p_name: String,
-    pub price: String,
+    pub p_price: i32,
+    pub qty: i32,
 }
 
 use crate::schema;
