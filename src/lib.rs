@@ -71,10 +71,10 @@ pub enum ProductUpdateType {
 impl ProductUpdateType {
     pub fn value(&self) -> i32 {
         match *self {
-            VendorUpdateType::InStock => 0,
-            VendorUpdateType::Description => 1,
-            VendorUpdateType::Name => 2,
-            VendorUpdateType::Price => 3,
+            ProductUpdateType::InStock => 0,
+            ProductUpdateType::Description => 1,
+            ProductUpdateType::Name => 2,
+            ProductUpdateType::Price => 3,
         }
     }
 }
@@ -384,6 +384,57 @@ pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
     }
     get_default_vendor()
 }
+
+pub async fn modify_product(_id: i32, data: String, update_type: i32) -> Product {
+    use self::schema::products::dsl::*;
+    let connection = &mut establish_pgdb_connection().await;
+    if update_type == ProductUpdateType::InStock.value() {
+        log(LogLevel::INFO, "Modify product active status.").await;
+        let m = diesel::update(products.find(_id))
+            .set(in_stock.eq(!in_stock))
+            .get_result::<Product>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_product()
+        };
+    }
+    else if update_type == ProductUpdateType::Description.value() {
+        log(LogLevel::INFO, "Modify product description.").await;
+        let m = diesel::update(products.find(_id))
+            .set(p_description.eq(data))
+            .get_result::<Product>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_product()
+        };
+    }
+    else if update_type == ProductUpdateType::Name.value() {
+        log(LogLevel::INFO, "Modify product name.").await;
+        let m = diesel::update(products.find(_id))
+            .set(p_name.eq(data))
+            .get_result::<Product>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_product()
+        };
+    }
+    else if update_type == ProductUpdateType::Price.value() {
+        log(LogLevel::INFO, "Modify product price.").await;
+        let price_data = match data.parse::<i32>() {
+            Ok(n) => n,
+            Err(_e) => 0,
+        };
+        let m = diesel::update(products.find(_id))
+            .set(p_price.eq(price_data))
+            .get_result::<Product>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_product()
+        };
+    }
+    get_default_product()
+}
+
 // END PGDB stuff
 
 // XMR RPC stuff
@@ -539,6 +590,18 @@ fn get_default_vendor() -> Vendor {
         v_description: "".to_string(),
         v_pgp: "".to_string(),
         active: false,
+    }
+}
+
+fn get_default_product() -> Product {
+    Product {
+        id: 0,
+        v_id: 0,
+        in_stock: false,
+        p_description: "".to_string(),
+        p_name: "".to_string(),
+        p_price: 0,
+        qty: 0,
     }
 }
 // END misc. helpers

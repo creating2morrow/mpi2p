@@ -2,6 +2,9 @@
 
 i2p marketplace api standards bootstrap
 
+* This is project is for research and development use
+* Contributors welcome!
+
 ## I2P (invisble internet)
 
 * download from [geti2p.org](https://geti2p.org/en/)

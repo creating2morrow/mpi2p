@@ -9,7 +9,7 @@ use mpi2p::*;
 
 /*
  TODO:
-   - update_product
+   - signature verification on update apis !!!
    - create_order
    - get_order/(s) * vendor or customer
    - update_order (multsig stuff is here (T_T))
@@ -99,6 +99,7 @@ async fn create_product(v_id: i32) -> Custom<Json<reqres::GetProductResponse>> {
 async fn get_vendor_products(v_id: i32) -> Custom<Json<reqres::GetVendorProductResponse>> {
     let m_products: Vec<models::Product> = find_vendor_products(&v_id).await;
     let mut v_res: Vec<reqres::GetProductResponse> = Vec::new();
+    // TODO: why cant the db query be serialized and returned?
     for m in m_products {
         let p_res: reqres::GetProductResponse = reqres::GetProductResponse {
             id: m.id, v_id: m.v_id, in_stock: m.in_stock,
@@ -108,6 +109,20 @@ async fn get_vendor_products(v_id: i32) -> Custom<Json<reqres::GetVendorProductR
         v_res.push(p_res);
     }
     Custom(Status::Accepted, Json(reqres::GetVendorProductResponse { products: v_res }))
+}
+
+/// Update product information
+#[patch("/update/<id>/<data>/<update_type>")]
+async fn update_product(
+    id: i32, data: String, update_type: i32
+) -> Custom<Json<reqres::GetProductResponse>> {
+    let m_product = modify_product(id, data, update_type).await;
+    let res: reqres::GetProductResponse = reqres::GetProductResponse {
+        id: m_product.id, v_id: m_product.v_id, in_stock: m_product.in_stock,
+        description: m_product.p_description, name: m_product.p_name,
+        price: m_product.p_price, qty: m_product.qty,
+    };
+    Custom(Status::Accepted, Json(res))
 }
 // END JSON APIs
 
@@ -124,7 +139,7 @@ async fn rocket() -> _ {
         .mount("/", routes![login])
         .mount("/customer", routes![get_customer, update_customer])
         .mount("/vendor", routes![get_vendor, update_vendor])
-        .mount("/product", routes![create_product/*update_product*/])
+        .mount("/product", routes![create_product, update_product])
         .mount("/products", routes![get_vendor_products])
         // .mount("/order", routes![get_order, update_order])
         .mount("/xmr", routes![get_version])
