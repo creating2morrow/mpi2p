@@ -61,6 +61,25 @@ impl VendorUpdateType {
 }
 
 #[derive(Debug)]
+pub enum ProductUpdateType {
+    InStock,
+    Description,
+    Name,
+    Price,
+}
+
+impl ProductUpdateType {
+    pub fn value(&self) -> i32 {
+        match *self {
+            VendorUpdateType::InStock => 0,
+            VendorUpdateType::Description => 1,
+            VendorUpdateType::Name => 2,
+            VendorUpdateType::Price => 3,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum I2pStatus {
     Accept,
     Reject,
@@ -220,6 +239,25 @@ pub async fn create_new_product(v_id: &i32) -> Product {
         .values(&new_product)
         .get_result(connection)
         .expect("Error saving new product")
+}
+
+pub async fn find_vendor_products(_v_id: &i32) -> Vec<Product> {
+    use self::schema::products::dsl::*;
+    let connection = &mut establish_pgdb_connection().await;
+    let results = products
+        .filter(schema::products::v_id.eq(_v_id))
+        .load::<models::Product>(connection);
+    match results {
+        Ok(r) => {
+            log(LogLevel::INFO, "Found vendor products.").await;
+            r
+        },
+        _=> {
+                log(LogLevel::ERROR, "Error finding vendor products.").await;
+                let v: Vec<Product> = Vec::new();
+                v
+            }
+    }
 }
 
 pub async fn verify_customer_login(address: String, signature: String) -> String {

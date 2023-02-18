@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-
 // All http requests and responses are here
 
 #[derive(Deserialize, Debug)]
@@ -86,4 +85,10 @@ pub struct GetProductResponse {
     pub name: String,
     pub price: i32,
     pub qty: i32,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct GetVendorProductResponse {
+    pub products: Vec<GetProductResponse>,
 }

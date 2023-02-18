@@ -9,11 +9,9 @@ use mpi2p::*;
 
 /*
  TODO:
-   - create_product
-   - get_product
    - update_product
    - create_order
-   - get_order
+   - get_order/(s) * vendor or customer
    - update_order (multsig stuff is here (T_T))
 */
 
@@ -96,6 +94,21 @@ async fn create_product(v_id: i32) -> Custom<Json<reqres::GetProductResponse>> {
     Custom(Status::Accepted, Json(res))
 }
 
+/// Get all products by passing vendor id
+#[get("/<v_id>")]
+async fn get_vendor_products(v_id: i32) -> Custom<Json<reqres::GetVendorProductResponse>> {
+    let m_products: Vec<models::Product> = find_vendor_products(&v_id).await;
+    let mut v_res: Vec<reqres::GetProductResponse> = Vec::new();
+    for m in m_products {
+        let p_res: reqres::GetProductResponse = reqres::GetProductResponse {
+            id: m.id, v_id: m.v_id, in_stock: m.in_stock,
+            description: m.p_description, name: m.p_name,
+            price: m.p_price, qty: m.qty,
+        };
+        v_res.push(p_res);
+    }
+    Custom(Status::Accepted, Json(reqres::GetVendorProductResponse { products: v_res }))
+}
 // END JSON APIs
 
 #[launch]
@@ -111,7 +124,8 @@ async fn rocket() -> _ {
         .mount("/", routes![login])
         .mount("/customer", routes![get_customer, update_customer])
         .mount("/vendor", routes![get_vendor, update_vendor])
-        .mount("/product", routes![create_product, /*update_product*/])
+        .mount("/product", routes![create_product/*update_product*/])
+        .mount("/products", routes![get_vendor_products])
         // .mount("/order", routes![get_order, update_order])
         .mount("/xmr", routes![get_version])
 }
