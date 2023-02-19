@@ -14,7 +14,7 @@ use std::fmt::{self, Debug};
 use diesel::pg::PgConnection;
 
 // TODO: random data for each login?
-const LOGIN_DATA: &str = "LOGIN";
+//const LOGIN_DATA: &str = "LOGIN";
 
 // Misc. Enumerations
 #[derive(Debug)]
@@ -77,6 +77,21 @@ impl ProductUpdateType {
             ProductUpdateType::Description => 1,
             ProductUpdateType::Name => 2,
             ProductUpdateType::Price => 3,
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum AuthUpdateType {
+    Data,
+    Created,
+}
+
+impl AuthUpdateType {
+    pub fn value(&self) -> i32 {
+        match *self {
+            AuthUpdateType::Data => 0,
+            AuthUpdateType::Created => 1,
         }
     }
 }
@@ -175,7 +190,8 @@ async fn create_customer(
     conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str
 ) -> Customer {
     use crate::schema::customers;
-    let new_customer = NewCustomer { c_xmr_address, c_name, c_pgp };
+    let cid: String = generate_rnd();
+    let new_customer = NewCustomer { cid: &cid, c_xmr_address, c_name, c_pgp };
     diesel::insert_into(customers::table)
         .values(&new_customer)
         .get_result(conn)
@@ -206,8 +222,9 @@ async fn create_vendor(
     v_description: &str, active: &bool
 ) -> Vendor {
     use crate::schema::vendors;
+    let vid: String = generate_rnd();
     let new_vendor = NewVendor {
-        v_xmr_address, v_name, v_description, v_pgp, active 
+        vid: &vid, v_xmr_address, v_name, v_description, v_pgp, active 
     };
     diesel::insert_into(vendors::table)
         .values(&new_vendor)
@@ -234,11 +251,13 @@ pub async fn find_vendor(address: String) -> Vendor {
     }
 }
 
-pub async fn create_new_product(v_id: &i32) -> Product {
+pub async fn create_new_product(v_id: String) -> Product {
     use crate::schema::products;
     let connection = &mut establish_pgdb_connection().await;
+    let pid: String = generate_rnd();
     let new_product = NewProduct {
-        v_id,
+        pid: &pid,
+        v_id: &v_id,
         in_stock: &false,
         p_description: "",
         p_name: "",
@@ -251,7 +270,7 @@ pub async fn create_new_product(v_id: &i32) -> Product {
         .expect("Error saving new product")
 }
 
-pub async fn find_vendor_products(_v_id: &i32) -> Vec<Product> {
+pub async fn find_vendor_products(_v_id: String) -> Vec<Product> {
     use self::schema::products::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     let results = products
@@ -270,12 +289,16 @@ pub async fn find_vendor_products(_v_id: &i32) -> Vec<Product> {
     }
 }
 
-pub async fn verify_customer_login(address: String, signature: String) -> String {
+pub async fn verify_customer_login(
+    address: String, data: String, signature: String
+) -> Authorization {
     use self::schema::customers::dsl::*;
-    let sig_address: String = verify_signature(address, signature).await;
+    let sig_address: String = verify_signature(address, data, signature).await;
     let connection = &mut establish_pgdb_connection().await;
     if sig_address == ApplicationErrors::LoginError.to_string() {
-        return sig_address;
+        // stop here create a new auth and return it
+        // update the address after succesful auth
+        return create_authorization(connection, String::from("")).await;
     }
     let results = customers
         .filter(schema::customers::c_xmr_address.eq(&sig_address))
@@ -283,47 +306,55 @@ pub async fn verify_customer_login(address: String, signature: String) -> String
     match results {
         Ok(r) => {
             if &r.len() > &0 {
-                let result: &str = &r[0].c_xmr_address;
-                result.to_string()
+                // let result: &str = &r[0].c_xmr_address;
+                // TODO: get the real auth here!
+                get_default_auth()
             } else {
                 log(LogLevel::INFO, "Creating new customer").await;
                 create_customer(connection, &sig_address, "", "").await;
-                sig_address.to_string()
+                get_default_auth()
             }
         }
         _=> {
             log(LogLevel::ERROR, "Error creating customer.").await;
-            ApplicationErrors::LoginError.to_string()
+            get_default_auth()
         }
     }
 }
 
-pub async fn verify_vendor_login(address: String, signature: String) -> String {
+pub async fn verify_vendor_login(
+    address: String, data: String, signature: String
+) -> Authorization {
     use self::schema::vendors::dsl::*;
-    let sig_address: String = verify_signature(address, signature).await;
     let connection = &mut establish_pgdb_connection().await;
+    let sig_address: String = verify_signature(address, data, signature).await;
+    if sig_address == ApplicationErrors::LoginError.to_string() {
+        // stop here create a new auth and return it
+        return create_authorization(connection, String::from("")).await;
+    }
     let results = vendors
         .filter(schema::vendors::v_xmr_address.eq(&sig_address))
         .load::<models::Vendor>(connection);
     match results {
         Ok(r) => {
             if &r.len() > &0 {
-                let result: &str = &r[0].v_xmr_address;
-                result.to_string()
+                //let result: &str = &r[0].v_xmr_address;
+                // TODO: return the real auth here
+                get_default_auth()
             } else {
                 log(LogLevel::INFO, "Creating new vendor").await;
-                create_vendor(connection, &sig_address, "", "", "", &false).await;
-                sig_address.to_string()
+                let v = create_vendor(connection, &sig_address, "", "", "", &false).await;
+                get_default_auth()
             }
         }
         _=> {
             log(LogLevel::ERROR, "Error creating vendor.").await;
-            ApplicationErrors::LoginError.to_string()
+            get_default_auth()
         }
     }
 }
 
-pub async fn modify_customer(_id: i32, data: String, update_type: i32) -> Customer {
+pub async fn modify_customer(_id: String, data: String, update_type: i32) -> Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     if update_type == VendorUpdateType::Name.value() {
@@ -338,7 +369,7 @@ pub async fn modify_customer(_id: i32, data: String, update_type: i32) -> Custom
     }
     else if update_type == VendorUpdateType::Pgp.value() {
         log(LogLevel::INFO, "Modify customer PGP.").await;
-        let m = diesel::update(customers.find(id))
+        let m = diesel::update(customers.find(_id))
             .set(c_pgp.eq(data))
             .get_result::<Customer>(connection);
         match m {
@@ -349,7 +380,7 @@ pub async fn modify_customer(_id: i32, data: String, update_type: i32) -> Custom
     get_default_customer()
 }
 
-pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
+pub async fn modify_vendor(_id: String, data: String, update_type: i32) -> Vendor {
     use self::schema::vendors::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     if update_type == VendorUpdateType::Active.value() {
@@ -395,7 +426,7 @@ pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
     get_default_vendor()
 }
 
-pub async fn modify_product(_id: i32, data: String, update_type: i32) -> Product {
+pub async fn modify_product(_id: String, data: String, update_type: i32) -> Product {
     use self::schema::products::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     // TODO: this isn't right. The product should automatically
@@ -433,7 +464,7 @@ pub async fn modify_product(_id: i32, data: String, update_type: i32) -> Product
     }
     else if update_type == ProductUpdateType::Price.value() {
         log(LogLevel::INFO, "Modify product price.").await;
-        let price_data = match data.parse::<i32>() {
+        let price_data = match data.parse::<i64>() {
             Ok(n) => n,
             Err(_e) => 0,
         };
@@ -448,6 +479,36 @@ pub async fn modify_product(_id: i32, data: String, update_type: i32) -> Product
     get_default_product()
 }
 
+pub async fn create_authorization(conn: &mut PgConnection, address:String) -> Authorization {
+    use crate::schema::authorizations;
+    let aid: String = generate_rnd();
+    let rnd: String = generate_rnd();
+    let created: i64 = chrono::offset::Utc::now().timestamp();
+    let new_auth = NewAuthorization { aid: &aid, created: &created, rnd: &rnd, xmr_address: &address };
+    diesel::insert_into(authorizations::table)
+        .values(&new_auth)
+        .get_result(conn)
+        .expect("Error saving new auth")
+}
+
+async fn find_auth(aid: String) -> Customer {
+    use self::schema::authorizations::dsl::*;
+    let connection = &mut establish_pgdb_connection().await;
+    let results = authorizations
+        .filter(schema::authorizations::aid.eq(aid))
+        .load::<models::Authorization>(connection);
+    match results {
+        Ok(mut r) => {
+            log(LogLevel::INFO, "Found auth.").await;
+            if &r.len() > &0 { r.remove(0) }
+            else { get_default_auth() }
+        },
+        _=> {
+                log(LogLevel::ERROR, "Error finding auth.").await;
+                get_default_auth()
+            }
+    }
+}
 // END PGDB stuff
 
 // XMR RPC stuff
@@ -485,13 +546,13 @@ pub async fn check_xmr_rpc_connection() -> () {
     }
 }
 
-pub async fn verify_signature(address: String, signature: String) -> String {
+pub async fn verify_signature(address: String, data: String, signature: String) -> String {
     log(LogLevel::INFO, "Signature verification in progress.").await;
     let client = reqwest::Client::new();
     let host = get_monero_rpc_host();
     let params = reqres::XmrRpcVerifyParams {
         address,
-        data: LOGIN_DATA.to_string(),
+        data,
         signature,
     };
     let req = reqres::XmrRpcVerifyRequest { 
@@ -524,7 +585,7 @@ pub async fn verify_signature(address: String, signature: String) -> String {
 
 // i2p connection verification
 /// TODO: create a tunnel for the server at initial startup
-/// if one does not exist.
+/// if one does not exist. See i2p-zero
 pub async fn check_i2p_connection() -> () {
     let client = reqwest::Client::new();
     let host = "http://localhost:7657/tunnels";
@@ -567,11 +628,13 @@ pub async fn check_i2p_connection() -> () {
 // END I2P connection verification
 
 // misc helpers
-pub async fn get_login_address(address: String, corv: String, signature: String) -> String {
+pub async fn get_login_auth(
+    address: String, corv: String, data: String, signature: String
+) -> Authorization {
     if corv == LoginType::Customer.value() {
-        verify_customer_login(address, signature).await
+        verify_customer_login(address, data, signature).await
     } else {
-        verify_vendor_login(address, signature).await
+        verify_vendor_login(address, data, signature).await
     }
 }
 
@@ -588,42 +651,51 @@ pub fn is_i2p_check_enabled() -> bool {
 
 fn get_default_customer() -> Customer {
     Customer { 
-        id: 0,
-        c_xmr_address: "".to_string(),
-        c_name: "".to_string(),
-        c_pgp: "".to_string(),
+        cid: String::from(""),
+        c_xmr_address: String::from(""),
+        c_name: String::from(""),
+        c_pgp: String::from(""),
     }
 }
 
 fn get_default_vendor() -> Vendor {
     Vendor { 
-        id: 0,
-        v_xmr_address: "".to_string(),
-        v_name: "".to_string(),
-        v_description: "".to_string(),
-        v_pgp: "".to_string(),
+        vid: String::from(""),
+        v_xmr_address: String::from(""),
+        v_name: String::from(""),
+        v_description: String::from(""),
+        v_pgp: String::from(""),
         active: false,
     }
 }
 
 fn get_default_product() -> Product {
     Product {
-        id: 0,
-        v_id: 0,
+        pid: String::from(""),
+        v_id: String::from(""),
         in_stock: false,
-        p_description: "".to_string(),
-        p_name: "".to_string(),
+        p_description: String::from(""),
+        p_name: String::from(""),
         p_price: 0,
         qty: 0,
+    }
+}
+
+pub fn get_default_auth() -> Authorization {
+    Authorization {
+        aid: String::from(""),
+        created: 0,
+        rnd: String::from(""),
+        xmr_address: String::from(""),
     }
 }
 
 pub fn generate_rnd() -> String {
     let mut data = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut data);
-    println!("Rnd generated: {}", hex::encode(data));
     hex::encode(data)
 }
+
 /*
 struct Token(String);
 

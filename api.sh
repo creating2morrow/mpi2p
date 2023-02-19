@@ -4,8 +4,11 @@
 curl http://127.0.0.1:8000/xmr/version
 
 # [GET] login
-# TODO: sign random data - current data to sign is "LOGIN"
-curl http://127.0.0.1:8000/login/<customer|vendor>/<XMR_ADDRESS>/<SIGNATURE>
+# customer or vendor
+# xmr address
+# data - random bytes to sign
+# signature - generate signature with wallet private keys
+curl http://127.0.0.1:8000/login/<customer|vendor>/<XMR_ADDRESS>/<DATA>/<SIGNATURE>
 
 # update
 # customer or vendor URI

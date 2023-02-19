@@ -1,23 +1,23 @@
 -- Your SQL goes here
 CREATE TABLE orders (
-  id SERIAL PRIMARY KEY,
-  c_id INT,
-  p_id INT,
+  orid VARCHAR PRIMARY KEY,
+  c_id VARCHAR NOT NULL,
+  p_id VARCHAR NOT NULL,
   CONSTRAINT fk_customer
       FOREIGN KEY(c_id) 
-	    REFERENCES customers(id),
+	    REFERENCES customers(cid),
   CONSTRAINT fk_product
       FOREIGN KEY(p_id) 
-	    REFERENCES products(id),
+	    REFERENCES products(pid),
   o_xmr_address VARCHAR,
-  o_date INT NOT NULL,
-  o_deliver_date INT,
-  o_ship_date INT,
+  o_date BIGINT NOT NULL,
+  o_deliver_date BIGINT NOT NULL,
+  o_ship_date BIGINT NOT NULL,
   o_hash VARCHAR,
   o_msig_prepare TEXT,
   o_msig_make TEXT,
   o_msig_kex TEXT,
   o_msig_kex_boost TEXT,
   o_status TEXT,
-  o_quantity INT NOT NULL
+  o_quantity BIGINT NOT NULL
 )

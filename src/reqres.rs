@@ -6,12 +6,6 @@ pub struct XmrRpcVerifyResult {
     pub good: bool,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "rocket::serde")]
-pub struct XmrApiVerifyResponse {
-    pub address: String,
-}
-
 #[derive(Deserialize, Debug)]
 pub struct XmrRpcVerifyResponse {
     pub result: XmrRpcVerifyResult,
@@ -59,7 +53,7 @@ pub struct XmrRpcVersionRequest {
 #[serde(crate = "rocket::serde")]
 pub struct GetCustomerResponse {
     pub address: String,
-    pub id: i32,
+    pub cid: String,
     pub name: String,
     pub pgp: String,
 }
@@ -70,7 +64,7 @@ pub struct GetVendorResponse {
     pub active: bool,
     pub address: String,
     pub description: String,
-    pub id: i32,
+    pub vid: String,
     pub name: String,
     pub pgp: String,
 }
@@ -78,17 +72,26 @@ pub struct GetVendorResponse {
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct GetProductResponse {
-    pub id: i32,
-    pub v_id: i32,
+    pub pid: String,
+    pub v_id: String,
     pub in_stock: bool,
     pub description: String,
     pub name: String,
-    pub price: i32,
-    pub qty: i32,
+    pub price: i64,
+    pub qty: i64,
 }
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct GetVendorProductResponse {
     pub products: Vec<GetProductResponse>,
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct GetAuthResponse {
+    pub address: String,
+    pub aid: String,
+    pub data: String,
+    pub expires: i64,
 }

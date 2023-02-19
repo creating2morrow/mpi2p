@@ -1,16 +1,17 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
-    authorizations (id) {
-        id -> Int4,
+    authorizations (aid) {
+        aid -> Varchar,
+        created -> Int8,
         rnd -> Varchar,
-        created -> Int4,
+        xmr_address -> Varchar,
     }
 }
 
 diesel::table! {
-    customers (id) {
-        id -> Int4,
+    customers (cid) {
+        cid -> Varchar,
         c_xmr_address -> Varchar,
         c_name -> Varchar,
         c_pgp -> Varchar,
@@ -18,39 +19,39 @@ diesel::table! {
 }
 
 diesel::table! {
-    orders (id) {
-        id -> Int4,
-        c_id -> Nullable<Int4>,
-        p_id -> Nullable<Int4>,
+    orders (orid) {
+        orid -> Varchar,
+        c_id -> Varchar,
+        p_id -> Varchar,
         o_xmr_address -> Nullable<Varchar>,
-        o_date -> Int4,
-        o_deliver_date -> Nullable<Int4>,
-        o_ship_date -> Nullable<Int4>,
+        o_date -> Int8,
+        o_deliver_date -> Int8,
+        o_ship_date -> Int8,
         o_hash -> Nullable<Varchar>,
         o_msig_prepare -> Nullable<Text>,
         o_msig_make -> Nullable<Text>,
         o_msig_kex -> Nullable<Text>,
         o_msig_kex_boost -> Nullable<Text>,
         o_status -> Nullable<Text>,
-        o_quantity -> Int4,
+        o_quantity -> Int8,
     }
 }
 
 diesel::table! {
-    products (id) {
-        id -> Int4,
-        v_id -> Int4,
+    products (pid) {
+        pid -> Varchar,
+        v_id -> Varchar,
         in_stock -> Bool,
         p_description -> Text,
         p_name -> Varchar,
-        p_price -> Int4,
-        qty -> Int4,
+        p_price -> Int8,
+        qty -> Int8,
     }
 }
 
 diesel::table! {
-    vendors (id) {
-        id -> Int4,
+    vendors (vid) {
+        vid -> Varchar,
         v_xmr_address -> Varchar,
         v_name -> Varchar,
         v_description -> Text,

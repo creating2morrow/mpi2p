@@ -30,7 +30,7 @@ async fn get_version() -> Custom<Json<reqres::XmrApiVersionResponse>> {
 async fn get_customer(address: String) -> Custom<Json<reqres::GetCustomerResponse>> {
     let m_customer: models::Customer = find_customer(address).await;
     let res: reqres::GetCustomerResponse = reqres::GetCustomerResponse {
-        id: m_customer.id, address: m_customer.c_xmr_address,
+        cid: m_customer.cid, address: m_customer.c_xmr_address,
         name: m_customer.c_name, pgp: m_customer.c_pgp,
     };
     Custom(Status::Accepted, Json(res))
@@ -41,33 +41,35 @@ async fn get_customer(address: String) -> Custom<Json<reqres::GetCustomerRespons
 async fn get_vendor(address: String) -> Custom<Json<reqres::GetVendorResponse>> {
     let m_vendor: models::Vendor = find_vendor(address).await;
     let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
-        id: m_vendor.id, active: m_vendor.active, address: m_vendor.v_xmr_address,
+        vid: m_vendor.vid, active: m_vendor.active, address: m_vendor.v_xmr_address,
         description: m_vendor.v_description,
         name: m_vendor.v_name,pgp: m_vendor.v_pgp,
     };
     Custom(Status::Accepted, Json(res))
 }
 
-// TODO: on initial login set the random data to sign for future requests
-
 /// Login with wallet signature
-#[get("/login/<corv>/<address>/<signature>")]
-async fn login(address: String, corv: String, signature: String) -> Custom<Json<reqres::XmrApiVerifyResponse>> {
-    let r_address: String = get_login_address(address, corv, signature).await;
-    let badreq = "".to_string();
-    if r_address == ApplicationErrors::LoginError.to_string() {
-        Custom(Status::BadRequest, Json(reqres::XmrApiVerifyResponse { address: badreq }))
-    } else {
-        Custom(Status::Accepted, Json(reqres::XmrApiVerifyResponse { address: r_address }))
-    }
+#[get("/login/<corv>/<address>/<data>/<signature>")]
+async fn login(address: String, corv: String, data: String, signature: String) -> Custom<Json<reqres::GetAuthResponse>> {
+    let m_auth: models::Authorization = get_login_auth(address, corv, data, signature).await;
+    let res: reqres::GetAuthResponse = reqres::GetAuthResponse {
+        address: m_auth.xmr_address, aid: m_auth.aid, data: m_auth.rnd, expires: 0,
+    };
+    // TODO: return 401 on bad auth and calculate expiration
+    // if r_address == ApplicationErrors::LoginError.to_string() {
+    //     Custom(Status::BadRequest, Json(badreq))
+    // } else {
+    //     Custom(Status::Accepted, Json(reqres::XmrApiVerifyResponse { address: r_address }))
+    // }
+    Custom(Status::Accepted, Json(res))
 }
 
 /// Update customer information
 #[patch("/update/<id>/<data>/<update_type>")]
-async fn update_customer(id: i32, data: String, update_type: i32) -> Custom<Json<reqres::GetCustomerResponse>> {
+async fn update_customer(id: String, data: String, update_type: i32) -> Custom<Json<reqres::GetCustomerResponse>> {
     let m_customer: models::Customer = modify_customer(id, data, update_type).await;
     let res: reqres::GetCustomerResponse = reqres::GetCustomerResponse {
-        id: m_customer.id, address: m_customer.c_xmr_address,
+        cid: m_customer.cid, address: m_customer.c_xmr_address,
         name: m_customer.c_name, pgp: m_customer.c_pgp,
     };
     Custom(Status::Accepted, Json(res))
@@ -75,10 +77,10 @@ async fn update_customer(id: i32, data: String, update_type: i32) -> Custom<Json
 
 /// Update vendor information
 #[patch("/update/<id>/<data>/<update_type>")]
-async fn update_vendor(id: i32, data: String, update_type: i32) -> Custom<Json<reqres::GetVendorResponse>> {
+async fn update_vendor(id: String, data: String, update_type: i32) -> Custom<Json<reqres::GetVendorResponse>> {
     let m_vendor = modify_vendor(id, data, update_type).await;
     let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
-        id: m_vendor.id, active: m_vendor.active, address: m_vendor.v_xmr_address,
+       vid: m_vendor.vid, active: m_vendor.active, address: m_vendor.v_xmr_address,
         description: m_vendor.v_description, name: m_vendor.v_name, pgp: m_vendor.v_pgp,
     };
     Custom(Status::Accepted, Json(res))
@@ -86,10 +88,10 @@ async fn update_vendor(id: i32, data: String, update_type: i32) -> Custom<Json<r
 
 /// Create a product by passing vendor id
 #[get("/create/<v_id>")]
-async fn create_product(v_id: i32) -> Custom<Json<reqres::GetProductResponse>> {
-    let m_product: models::Product = create_new_product(&v_id).await;
+async fn create_product(v_id: String) -> Custom<Json<reqres::GetProductResponse>> {
+    let m_product: models::Product = create_new_product(v_id).await;
     let res: reqres::GetProductResponse = reqres::GetProductResponse {
-        id: m_product.id, v_id: m_product.v_id, in_stock: m_product.in_stock,
+        pid: m_product.pid, v_id: m_product.v_id, in_stock: m_product.in_stock,
         description: m_product.p_description, name: m_product.p_name,
         price: m_product.p_price, qty: m_product.qty,
     };
@@ -98,13 +100,13 @@ async fn create_product(v_id: i32) -> Custom<Json<reqres::GetProductResponse>> {
 
 /// Get all products by passing vendor id
 #[get("/<v_id>")]
-async fn get_vendor_products(v_id: i32) -> Custom<Json<reqres::GetVendorProductResponse>> {
-    let m_products: Vec<models::Product> = find_vendor_products(&v_id).await;
+async fn get_vendor_products(v_id: String) -> Custom<Json<reqres::GetVendorProductResponse>> {
+    let m_products: Vec<models::Product> = find_vendor_products(v_id).await;
     let mut v_res: Vec<reqres::GetProductResponse> = Vec::new();
     // TODO: why cant the db query be serialized and returned?
     for m in m_products {
         let p_res: reqres::GetProductResponse = reqres::GetProductResponse {
-            id: m.id, v_id: m.v_id, in_stock: m.in_stock,
+            pid: m.pid, v_id: m.v_id, in_stock: m.in_stock,
             description: m.p_description, name: m.p_name,
             price: m.p_price, qty: m.qty,
         };
@@ -116,11 +118,11 @@ async fn get_vendor_products(v_id: i32) -> Custom<Json<reqres::GetVendorProductR
 /// Update product information
 #[patch("/update/<id>/<data>/<update_type>")]
 async fn update_product(
-    id: i32, data: String, update_type: i32
+    id: String, data: String, update_type: i32
 ) -> Custom<Json<reqres::GetProductResponse>> {
     let m_product = modify_product(id, data, update_type).await;
     let res: reqres::GetProductResponse = reqres::GetProductResponse {
-        id: m_product.id, v_id: m_product.v_id, in_stock: m_product.in_stock,
+        pid: m_product.pid, v_id: m_product.v_id, in_stock: m_product.in_stock,
         description: m_product.p_description, name: m_product.p_name,
         price: m_product.p_price, qty: m_product.qty,
     };
@@ -133,7 +135,6 @@ async fn rocket() -> _ {
     // pdgb and monero-wallet-rpc are required to be up at boot time
     establish_pgdb_connection().await;
     check_xmr_rpc_connection().await;
-    generate_rnd();
     if is_i2p_check_enabled() {
         check_i2p_connection().await;
     }
