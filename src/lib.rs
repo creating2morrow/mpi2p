@@ -2,12 +2,14 @@ pub mod models;
 pub mod schema;
 pub mod reqres;
 
+use hex;
 use std::env;
 use chrono;
 use dotenv::dotenv;
 use self::models::*;
 use clap:: Parser;
 use diesel::prelude::*;
+use rand_core::RngCore;
 use std::fmt::{self, Debug};
 use diesel::pg::PgConnection;
 
@@ -150,6 +152,14 @@ pub struct Args {
         default_value = "http://localhost:38083",
    )]
    monero_rpc_host: String,
+   /// Token expiration in minutes
+   #[arg(
+        short,
+        long,
+        help = "Set the token expiration limit in minutes.",
+        default_value = "60",
+   )]
+   token_timeout: i32,
 }
 // end cmd line args
 
@@ -388,10 +398,13 @@ pub async fn modify_vendor(_id: i32, data: String, update_type: i32) -> Vendor {
 pub async fn modify_product(_id: i32, data: String, update_type: i32) -> Product {
     use self::schema::products::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
+    // TODO: this isn't right. The product should automatically
+    // get updated based on the qty. Qty should be updated according
+    // to settled orders
     if update_type == ProductUpdateType::InStock.value() {
         log(LogLevel::INFO, "Modify product active status.").await;
         let m = diesel::update(products.find(_id))
-            .set(in_stock.eq(!in_stock))
+            .set(in_stock.eq(true))
             .get_result::<Product>(connection);
         match m {
             Ok(m) => m,
@@ -604,4 +617,36 @@ fn get_default_product() -> Product {
         qty: 0,
     }
 }
+
+pub fn generate_rnd() -> String {
+    let mut data = [0u8; 32];
+    rand::thread_rng().fill_bytes(&mut data);
+    println!("Rnd generated: {}", hex::encode(data));
+    hex::encode(data)
+}
+/*
+struct Token(String);
+
+#[derive(Debug)]
+enum ApiTokenError {
+    Missing,
+    Invalid,
+}
+
+impl<'a, 'r> FromRequest<'a, 'r> for Token {
+    type Error = ApiTokenError;
+
+    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+        let token = request.headers().get_one("token");
+        match token {
+            Some(token) => {
+                // check validity
+                Outcome::Success(Token(token.to_string()))
+            }
+            None => Outcome::Failure((Status::Unauthorized, ApiTokenError::Missing)),
+        }
+    }
+}
+*/
+
 // END misc. helpers

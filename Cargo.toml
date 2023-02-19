@@ -9,6 +9,9 @@ chrono = "0.4.23"
 clap = { version = "4.1.4", features = ["derive"] }
 diesel = { version = "2.0.0", features = ["postgres"] }
 dotenv = "0.15"
+hex = "0.4.3"
+rand = "0.8.5"
+rand_core = "0.6.4"
 reqwest = { version = "0.11.12", features = ["blocking", "json"] }
 rocket = { version = "0.5.0-rc.2", features = ["json"] }
 schedule_recv = "0.1.0"

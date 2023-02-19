@@ -37,7 +37,18 @@ i2p marketplace api standards bootstrap
 ## API Examples
 
 * see `api.sh`
-* <in progress>: swagger open api
+* {in progress}: swagger open api
+
+### Authorization
+
+User signs rotating random data per request and the `Authorization` header
+is screened accordingly. The login API is used to get the random data.
+
+`Authorization: <ADDRESS>:<SIGNATURE>`
+
+{in progress}: encrypt the plain-text auth into a JWT.
+* make the expiration of the tokens configurable at run-time
+* pentest
 
 ## Order Lifecycle
 

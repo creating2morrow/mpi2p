@@ -1,6 +1,14 @@
 // @generated automatically by Diesel CLI.
 
 diesel::table! {
+    authorizations (id) {
+        id -> Int4,
+        rnd -> Varchar,
+        created -> Int4,
+    }
+}
+
+diesel::table! {
     customers (id) {
         id -> Int4,
         c_xmr_address -> Varchar,
@@ -56,6 +64,7 @@ diesel::joinable!(orders -> products (p_id));
 diesel::joinable!(products -> vendors (v_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
+    authorizations,
     customers,
     orders,
     products,

@@ -48,6 +48,8 @@ async fn get_vendor(address: String) -> Custom<Json<reqres::GetVendorResponse>> 
     Custom(Status::Accepted, Json(res))
 }
 
+// TODO: on initial login set the random data to sign for future requests
+
 /// Login with wallet signature
 #[get("/login/<corv>/<address>/<signature>")]
 async fn login(address: String, corv: String, signature: String) -> Custom<Json<reqres::XmrApiVerifyResponse>> {
@@ -131,6 +133,7 @@ async fn rocket() -> _ {
     // pdgb and monero-wallet-rpc are required to be up at boot time
     establish_pgdb_connection().await;
     check_xmr_rpc_connection().await;
+    generate_rnd();
     if is_i2p_check_enabled() {
         check_i2p_connection().await;
     }
