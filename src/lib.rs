@@ -293,12 +293,13 @@ pub async fn verify_customer_login(
     address: String, data: String, signature: String
 ) -> Authorization {
     use self::schema::customers::dsl::*;
+    let set_address: String = String::from(&address);
     let sig_address: String = verify_signature(address, data, signature).await;
     let connection = &mut establish_pgdb_connection().await;
     if sig_address == ApplicationErrors::LoginError.to_string() {
         // stop here create a new auth and return it
         // update the address after succesful auth
-        return create_authorization(connection, String::from("")).await;
+        return create_auth(connection, set_address).await;
     }
     let results = customers
         .filter(schema::customers::c_xmr_address.eq(&sig_address))
@@ -327,10 +328,14 @@ pub async fn verify_vendor_login(
 ) -> Authorization {
     use self::schema::vendors::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
+    let set_address: String = String::from(&address);
     let sig_address: String = verify_signature(address, data, signature).await;
     if sig_address == ApplicationErrors::LoginError.to_string() {
-        // stop here create a new auth and return it
-        return create_authorization(connection, String::from("")).await;
+        // stop here 
+        // - check if this address has a generated auth
+        // - if it is not expired return it
+        // - generate new rnd and created fields for expired auth
+        return create_auth(connection, set_address).await;
     }
     let results = vendors
         .filter(schema::vendors::v_xmr_address.eq(&sig_address))
@@ -343,7 +348,7 @@ pub async fn verify_vendor_login(
                 get_default_auth()
             } else {
                 log(LogLevel::INFO, "Creating new vendor").await;
-                let v = create_vendor(connection, &sig_address, "", "", "", &false).await;
+                // let v = create_vendor(connection, &sig_address, "", "", "", &false).await;
                 get_default_auth()
             }
         }
@@ -479,7 +484,7 @@ pub async fn modify_product(_id: String, data: String, update_type: i32) -> Prod
     get_default_product()
 }
 
-pub async fn create_authorization(conn: &mut PgConnection, address:String) -> Authorization {
+pub async fn create_auth(conn: &mut PgConnection, address:String) -> Authorization {
     use crate::schema::authorizations;
     let aid: String = generate_rnd();
     let rnd: String = generate_rnd();
@@ -491,11 +496,11 @@ pub async fn create_authorization(conn: &mut PgConnection, address:String) -> Au
         .expect("Error saving new auth")
 }
 
-async fn find_auth(aid: String) -> Customer {
+async fn find_auth(address: String) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     let results = authorizations
-        .filter(schema::authorizations::aid.eq(aid))
+        .filter(schema::authorizations::xmr_address.eq(address))
         .load::<models::Authorization>(connection);
     match results {
         Ok(mut r) => {
@@ -508,6 +513,32 @@ async fn find_auth(aid: String) -> Customer {
                 get_default_auth()
             }
     }
+}
+
+async fn modify_auth(_id: String, data: String, update_type: i32) -> Authorization {
+    use self::schema::authorizations::dsl::*;
+    let connection = &mut establish_pgdb_connection().await;
+    if update_type == AuthUpdateType::Data.value() {
+        log(LogLevel::INFO, "Modify auth data.").await;
+        let m = diesel::update(authorizations.find(_id))
+            .set(rnd.eq(data))
+            .get_result::<Authorization>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_auth()
+        };
+    }
+    else if update_type == AuthUpdateType::Created.value() {
+        log(LogLevel::INFO, "Modify auth expiration.").await;
+        let m = diesel::update(authorizations.find(_id))
+            .set(created.eq(chrono::offset::Utc::now().timestamp()))
+            .get_result::<Authorization>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => get_default_auth()
+        };
+    }
+    get_default_auth()
 }
 // END PGDB stuff
 
@@ -697,6 +728,8 @@ pub fn generate_rnd() -> String {
 }
 
 /*
+https://stackoverflow.com/questions/64829301/how-to-retrieve-http-headers-from-a-request-in-rocket
+
 struct Token(String);
 
 #[derive(Debug)]

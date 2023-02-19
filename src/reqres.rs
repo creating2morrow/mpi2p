@@ -92,6 +92,6 @@ pub struct GetVendorProductResponse {
 pub struct GetAuthResponse {
     pub address: String,
     pub aid: String,
+    pub created: i64,
     pub data: String,
-    pub expires: i64,
 }

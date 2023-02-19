@@ -53,7 +53,7 @@ async fn get_vendor(address: String) -> Custom<Json<reqres::GetVendorResponse>> 
 async fn login(address: String, corv: String, data: String, signature: String) -> Custom<Json<reqres::GetAuthResponse>> {
     let m_auth: models::Authorization = get_login_auth(address, corv, data, signature).await;
     let res: reqres::GetAuthResponse = reqres::GetAuthResponse {
-        address: m_auth.xmr_address, aid: m_auth.aid, data: m_auth.rnd, expires: 0,
+        address: m_auth.xmr_address, aid: m_auth.aid, data: m_auth.rnd, created: m_auth.created,
     };
     // TODO: return 401 on bad auth and calculate expiration
     // if r_address == ApplicationErrors::LoginError.to_string() {
