@@ -240,8 +240,10 @@ pub async fn find_vendor(address: String) -> Vendor {
         .load::<models::Vendor>(connection);
     match results {
         Ok(mut r) => {
-            log(LogLevel::INFO, "Found vendor.").await;
-            if &r.len() > &0 { r.remove(0) }
+            if &r.len() > &0 { 
+                log(LogLevel::INFO, "Found vendor.").await;
+                r.remove(0) 
+            }
             else { get_default_vendor() }
         },
         _=> {
@@ -289,17 +291,18 @@ pub async fn find_vendor_products(_v_id: String) -> Vec<Product> {
     }
 }
 
-pub async fn verify_customer_login(
-    address: String, data: String, signature: String
-) -> Authorization {
+pub async fn verify_customer_login(address: String, signature: String) -> Authorization {
     use self::schema::customers::dsl::*;
-    let set_address: String = String::from(&address);
-    let sig_address: String = verify_signature(address, data, signature).await;
     let connection = &mut establish_pgdb_connection().await;
+    let f_address = String::from(&address);
+    let f_auth: Authorization = find_auth(f_address).await;
+    let data: String = String::from(&f_auth.rnd);
+    if f_auth.xmr_address == String::from("") {
+        return create_auth(connection, address).await;
+    }
+    let sig_address: String = verify_signature(address, data, signature).await;
     if sig_address == ApplicationErrors::LoginError.to_string() {
-        // stop here create a new auth and return it
-        // update the address after succesful auth
-        return create_auth(connection, set_address).await;
+        return f_auth;
     }
     let results = customers
         .filter(schema::customers::c_xmr_address.eq(&sig_address))
@@ -307,13 +310,11 @@ pub async fn verify_customer_login(
     match results {
         Ok(r) => {
             if &r.len() > &0 {
-                // let result: &str = &r[0].c_xmr_address;
-                // TODO: get the real auth here!
-                get_default_auth()
+                return f_auth;
             } else {
                 log(LogLevel::INFO, "Creating new customer").await;
                 create_customer(connection, &sig_address, "", "").await;
-                get_default_auth()
+                return f_auth;
             }
         }
         _=> {
@@ -323,19 +324,18 @@ pub async fn verify_customer_login(
     }
 }
 
-pub async fn verify_vendor_login(
-    address: String, data: String, signature: String
-) -> Authorization {
+pub async fn verify_vendor_login(address: String, signature: String) -> Authorization {
     use self::schema::vendors::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
-    let set_address: String = String::from(&address);
+    let f_address = String::from(&address);
+    let f_auth: Authorization = find_auth(f_address).await;
+    let data: String = String::from(&f_auth.rnd);
+    if f_auth.xmr_address == String::from("") {
+        return create_auth(connection, address).await;
+    }
     let sig_address: String = verify_signature(address, data, signature).await;
     if sig_address == ApplicationErrors::LoginError.to_string() {
-        // stop here 
-        // - check if this address has a generated auth
-        // - if it is not expired return it
-        // - generate new rnd and created fields for expired auth
-        return create_auth(connection, set_address).await;
+        return f_auth;
     }
     let results = vendors
         .filter(schema::vendors::v_xmr_address.eq(&sig_address))
@@ -343,13 +343,11 @@ pub async fn verify_vendor_login(
     match results {
         Ok(r) => {
             if &r.len() > &0 {
-                //let result: &str = &r[0].v_xmr_address;
-                // TODO: return the real auth here
-                get_default_auth()
+                return f_auth;
             } else {
                 log(LogLevel::INFO, "Creating new vendor").await;
-                // let v = create_vendor(connection, &sig_address, "", "", "", &false).await;
-                get_default_auth()
+                create_vendor(connection, &sig_address, "", "", "", &false).await;
+                return f_auth;
             }
         }
         _=> {
@@ -504,18 +502,19 @@ async fn find_auth(address: String) -> Authorization {
         .load::<models::Authorization>(connection);
     match results {
         Ok(mut r) => {
-            log(LogLevel::INFO, "Found auth.").await;
-            if &r.len() > &0 { r.remove(0) }
-            else { get_default_auth() }
+            if &r.len() > &0 {
+                log(LogLevel::INFO, "Found auth.").await;
+                r.remove(0)
+            } else { get_default_auth() }
         },
         _=> {
                 log(LogLevel::ERROR, "Error finding auth.").await;
                 get_default_auth()
-            }
+        }
     }
 }
 
-async fn modify_auth(_id: String, data: String, update_type: i32) -> Authorization {
+async fn _modify_auth(_id: String, data: String, update_type: i32) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     if update_type == AuthUpdateType::Data.value() {
@@ -660,12 +659,12 @@ pub async fn check_i2p_connection() -> () {
 
 // misc helpers
 pub async fn get_login_auth(
-    address: String, corv: String, data: String, signature: String
+    address: String, corv: String, signature: String
 ) -> Authorization {
     if corv == LoginType::Customer.value() {
-        verify_customer_login(address, data, signature).await
+        verify_customer_login(address, signature).await
     } else {
-        verify_vendor_login(address, data, signature).await
+        verify_vendor_login(address, signature).await
     }
 }
 

@@ -45,13 +45,16 @@ async fn get_vendor(address: String) -> Custom<Json<reqres::GetVendorResponse>> 
         description: m_vendor.v_description,
         name: m_vendor.v_name,pgp: m_vendor.v_pgp,
     };
+    if res.address == String::from("") {
+        return Custom(Status::NotFound, Json(res));
+    }
     Custom(Status::Accepted, Json(res))
 }
 
 /// Login with wallet signature
-#[get("/login/<corv>/<address>/<data>/<signature>")]
-async fn login(address: String, corv: String, data: String, signature: String) -> Custom<Json<reqres::GetAuthResponse>> {
-    let m_auth: models::Authorization = get_login_auth(address, corv, data, signature).await;
+#[get("/login/<corv>/<address>/<signature>")]
+async fn login(address: String, corv: String, signature: String) -> Custom<Json<reqres::GetAuthResponse>> {
+    let m_auth: models::Authorization = get_login_auth(address, corv, signature).await;
     let res: reqres::GetAuthResponse = reqres::GetAuthResponse {
         address: m_auth.xmr_address, aid: m_auth.aid, data: m_auth.rnd, created: m_auth.created,
     };
