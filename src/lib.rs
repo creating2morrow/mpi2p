@@ -8,13 +8,18 @@ use chrono;
 use dotenv::dotenv;
 use self::models::*;
 use clap:: Parser;
-use diesel::prelude::*;
 use rand_core::RngCore;
 use std::fmt::{self, Debug};
+use async_trait::async_trait;
+
+use diesel::prelude::*;
 use diesel::pg::PgConnection;
 
-// TODO: random data for each login?
-//const LOGIN_DATA: &str = "LOGIN";
+use rocket::Request;
+use rocket::request;
+use rocket::http::Status;
+use rocket::request::Outcome;
+use rocket::request::FromRequest;
 
 // Misc. Enumerations
 #[derive(Debug)]
@@ -77,21 +82,6 @@ impl ProductUpdateType {
             ProductUpdateType::Description => 1,
             ProductUpdateType::Name => 2,
             ProductUpdateType::Price => 3,
-        }
-    }
-}
-
-#[derive(Debug)]
-pub enum AuthUpdateType {
-    Data,
-    Created,
-}
-
-impl AuthUpdateType {
-    pub fn value(&self) -> i32 {
-        match *self {
-            AuthUpdateType::Data => 0,
-            AuthUpdateType::Created => 1,
         }
     }
 }
@@ -174,7 +164,7 @@ pub struct Args {
         help = "Set the token expiration limit in minutes.",
         default_value = "60",
    )]
-   token_timeout: i32,
+   token_timeout: i64,
 }
 // end cmd line args
 
@@ -514,31 +504,82 @@ async fn find_auth(address: String) -> Authorization {
     }
 }
 
-async fn _modify_auth(_id: String, data: String, update_type: i32) -> Authorization {
+async fn update_auth_expiration(_id: &str) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
-    if update_type == AuthUpdateType::Data.value() {
-        log(LogLevel::INFO, "Modify auth data.").await;
-        let m = diesel::update(authorizations.find(_id))
-            .set(rnd.eq(data))
-            .get_result::<Authorization>(connection);
-        match m {
-            Ok(m) => m,
-            Err(_e) => get_default_auth()
-        };
+    log(LogLevel::INFO, "Modify auth expiration.").await;
+    let time: i64 = chrono::offset::Utc::now().timestamp();
+    let m = diesel::update(authorizations.find(_id))
+        .set(created.eq(time))
+        .get_result::<Authorization>(connection);
+    match m {
+        Ok(m) => m,
+        Err(_e) => get_default_auth()
     }
-    else if update_type == AuthUpdateType::Created.value() {
-        log(LogLevel::INFO, "Modify auth expiration.").await;
-        let m = diesel::update(authorizations.find(_id))
-            .set(created.eq(chrono::offset::Utc::now().timestamp()))
-            .get_result::<Authorization>(connection);
-        match m {
-            Ok(m) => m,
-            Err(_e) => get_default_auth()
-        };
-    }
-    get_default_auth()
 }
+
+async fn update_auth_data(_id: &str) -> Authorization {
+    use self::schema::authorizations::dsl::*;
+    let connection = &mut establish_pgdb_connection().await;
+    log(LogLevel::INFO, "Modify auth data.").await;
+    let data: String = generate_rnd();
+    let m = diesel::update(authorizations.find(_id))
+        .set(rnd.eq(data))
+        .get_result::<Authorization>(connection);
+    match m {
+        Ok(m) => m,
+        Err(_e) => get_default_auth()
+    }
+}
+
+// Authorization impl
+// https://stackoverflow.com/questions/64829301/how-to-retrieve-http-headers-from-a-request-in-rocket
+
+struct Token(String);
+
+#[derive(Debug)]
+enum ApiTokenError {
+    Missing,
+    Invalid,
+    Expired,
+}
+
+#[async_trait]
+impl<'a, 'r> FromRequest<'r> for Token {
+    type Error = ApiTokenError;
+
+    async fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
+        let token = request.headers().get_one("authorization");
+        match token {
+            Some(token) => {
+                // extract address
+                let split = token.split(":");
+                let mut v: Vec<String> = split.map(|s| s.to_string()).collect();
+                let address: String = v.remove(0);
+                let signature: String = v.remove(1);
+                // look up auth for address
+                let f_auth: Authorization = find_auth(address).await;
+                // check expiration, generate new data to sign if necessary
+                let now: i64 = chrono::offset::Utc::now().timestamp();
+                let expiration = get_auth_expiration();
+                if now > f_auth.created + expiration {
+                    update_auth_expiration(&f_auth.aid).await;
+                    update_auth_data(&f_auth.aid).await;
+                    return Outcome::Failure((Status::Unauthorized, ApiTokenError::Expired));
+                }
+                // verify signature on the data if not expired
+                let data = f_auth.rnd;
+                let sig_address: String = verify_signature(address, data, signature).await;
+                if sig_address == ApplicationErrors::LoginError.to_string() {
+                    return Outcome::Failure((Status::Unauthorized, ApiTokenError::Invalid));
+                }
+                return Outcome::Success(Token(token.to_string()));
+            }
+            None => Outcome::Failure((Status::Unauthorized, ApiTokenError::Missing)),
+        }
+    }
+}
+// End Authorization impl
 // END PGDB stuff
 
 // XMR RPC stuff
@@ -658,9 +699,7 @@ pub async fn check_i2p_connection() -> () {
 // END I2P connection verification
 
 // misc helpers
-pub async fn get_login_auth(
-    address: String, corv: String, signature: String
-) -> Authorization {
+pub async fn get_login_auth(address: String, corv: String, signature: String) -> Authorization {
     if corv == LoginType::Customer.value() {
         verify_customer_login(address, signature).await
     } else {
@@ -672,6 +711,11 @@ fn get_monero_rpc_host() -> String {
     let args = Args::parse();
     let rpc = args.monero_rpc_host.to_string();
     format!("{}/json_rpc", rpc)
+}
+
+fn get_auth_expiration() -> i64 {
+    let args = Args::parse();
+    args.token_timeout * 60
 }
 
 pub fn is_i2p_check_enabled() -> bool {
@@ -725,32 +769,4 @@ pub fn generate_rnd() -> String {
     rand::thread_rng().fill_bytes(&mut data);
     hex::encode(data)
 }
-
-/*
-https://stackoverflow.com/questions/64829301/how-to-retrieve-http-headers-from-a-request-in-rocket
-
-struct Token(String);
-
-#[derive(Debug)]
-enum ApiTokenError {
-    Missing,
-    Invalid,
-}
-
-impl<'a, 'r> FromRequest<'a, 'r> for Token {
-    type Error = ApiTokenError;
-
-    fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        let token = request.headers().get_one("token");
-        match token {
-            Some(token) => {
-                // check validity
-                Outcome::Success(Token(token.to_string()))
-            }
-            None => Outcome::Failure((Status::Unauthorized, ApiTokenError::Missing)),
-        }
-    }
-}
-*/
-
 // END misc. helpers

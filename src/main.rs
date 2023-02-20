@@ -10,6 +10,10 @@ use mpi2p::*;
 /*
  TODO:
    - signature verification on update apis !!!
+   - header "token" verification implementation
+      - login api wont have this
+      - match address to vendor or customer
+      - implement guard and http status
    - create_order
    - get_order/(s) * vendor or customer
    - update_order (multsig stuff is here (T_T))
@@ -58,12 +62,6 @@ async fn login(address: String, corv: String, signature: String) -> Custom<Json<
     let res: reqres::GetAuthResponse = reqres::GetAuthResponse {
         address: m_auth.xmr_address, aid: m_auth.aid, data: m_auth.rnd, created: m_auth.created,
     };
-    // TODO: return 401 on bad auth and calculate expiration
-    // if r_address == ApplicationErrors::LoginError.to_string() {
-    //     Custom(Status::BadRequest, Json(badreq))
-    // } else {
-    //     Custom(Status::Accepted, Json(reqres::XmrApiVerifyResponse { address: r_address }))
-    // }
     Custom(Status::Accepted, Json(res))
 }
 

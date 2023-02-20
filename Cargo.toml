@@ -1,3 +1,4 @@
+
 [package]
 name = "mpi2p"
 version = "0.1.0"
@@ -5,6 +6,7 @@ edition = "2021"
 publish = false
 
 [dependencies]
+async-trait = "0.1.64"
 chrono = "0.4.23"
 clap = { version = "4.1.4", features = ["derive"] }
 diesel = { version = "2.0.0", features = ["postgres"] }

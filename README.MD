@@ -50,13 +50,20 @@ is screened accordingly. The login API is used to get the random data.
 * make the expiration of the tokens configurable at run-time
 * pentest
 
-## Auth Lifecycle
+## Authentication / Authorization Lifecycle
+
+### Authentication
 
 * /login/<customer|vendor>/<address>/<data>/<signature>
-* on initial request just send data but it doesn't matter any string will fail
+* on initial request just send address and signature but it doesn't matter any string
 * get auth response and sign the `data` in it with xmr wallet [sign]() feature
+* call the login API a second time to create customer or vendor
+
+### Authorization
+
 * set `Authorization: <ADDRESS>:<SIGNATURE>` on subsequent requests
-* requests will fail update auth expiration (default : 60 minutes)
+* address must match the one on file during login
+* if auth expiration then new data must be signed (default : 60 minutes)
 * call the login API again to refresh and sign new data
 * the login API will create customer or vendor if they dont exist
 * to check for existence use auth header and xmr address in the /customer|vendor/<ADDRESS> API
@@ -76,11 +83,15 @@ is screened accordingly. The login API is used to get the random data.
 ## Status
 
 * [x] Initial commit
-* [ ] Authorization flow
-* [ ] Customer APIs
-* [ ] Vendor APIs
-* [ ] Product APIs
-* [ ] Order APIs / Monero Multisignature integration
-* [ ] Decentralized P2P i2p connectivity
-* [ ] GUI
-* [ ] Beta release v0.1.0-beta
+* [ ] Authorization flow - 3/23
+* [ ] Customer APIs - 4/23
+* [ ] Vendor APIs - 5/23
+* [ ] Product APIs - 6/23
+* [ ] Order APIs / Monero Multisignature integration - 7/23
+* [ ] Decentralized P2P i2p connectivity - 8/23
+* [ ] Unit tests - 9/23
+* [ ] Functional tests - 9/23
+* [ ] Pentest - 9/23
+* [ ] Documentation - 10/23
+* [ ] GUI - 11/23
+* [ ] Beta release v0.1.0-beta 12/23
