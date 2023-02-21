@@ -191,11 +191,11 @@ pub async fn find_customer(address: String) -> Customer {
         Ok(mut r) => {
             log(LogLevel::INFO, "Found customer.").await;
             if &r.len() > &0 { r.remove(0) }
-            else { get_default_customer() }
+            else { Default::default() }
         },
         _=> {
                 log(LogLevel::ERROR, "Error finding customer.").await;
-                get_default_customer()
+                Default::default()
             }
     }
 }
@@ -227,11 +227,11 @@ pub async fn find_vendor(address: String) -> Vendor {
                 log(LogLevel::INFO, "Found vendor.").await;
                 r.remove(0) 
             }
-            else { get_default_vendor() }
+            else { Default::default() }
         },
         _=> {
                 log(LogLevel::ERROR, "Error finding vendor.").await;
-                get_default_vendor()
+                Default::default()
             }
     }
 }
@@ -302,7 +302,7 @@ pub async fn verify_customer_login(address: String, signature: String) -> Author
         }
         _=> {
             log(LogLevel::ERROR, "Error creating customer.").await;
-            get_default_auth()
+            Default::default()
         }
     }
 }
@@ -335,7 +335,7 @@ pub async fn verify_vendor_login(address: String, signature: String) -> Authoriz
         }
         _=> {
             log(LogLevel::ERROR, "Error creating vendor.").await;
-            get_default_auth()
+            Default::default()
         }
     }
 }
@@ -350,7 +350,7 @@ pub async fn modify_customer(_id: String, data: String, update_type: i32) -> Cus
             .get_result::<Customer>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => get_default_customer()
+            Err(_e) => Default::default()
         };
     }
     else if update_type == VendorUpdateType::Pgp.value() {
@@ -360,10 +360,10 @@ pub async fn modify_customer(_id: String, data: String, update_type: i32) -> Cus
             .get_result::<Customer>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => get_default_customer()
+            Err(_e) => Default::default()
         };
     }
-    get_default_customer()
+    Default::default()
 }
 
 pub async fn modify_vendor(_id: String, data: String, update_type: i32) -> Vendor {
@@ -376,7 +376,7 @@ pub async fn modify_vendor(_id: String, data: String, update_type: i32) -> Vendo
             .get_result::<Vendor>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => get_default_vendor()
+            Err(_e) => Default::default()
         };
     }
     else if update_type == VendorUpdateType::Description.value() {
@@ -386,7 +386,7 @@ pub async fn modify_vendor(_id: String, data: String, update_type: i32) -> Vendo
             .get_result::<Vendor>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => get_default_vendor()
+            Err(_e) => Default::default()
         };
     }
     else if update_type == VendorUpdateType::Name.value() {
@@ -396,7 +396,7 @@ pub async fn modify_vendor(_id: String, data: String, update_type: i32) -> Vendo
             .get_result::<Vendor>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => get_default_vendor()
+            Err(_e) => Default::default()
         };
     }
     else if update_type == VendorUpdateType::Pgp.value() {
@@ -406,10 +406,10 @@ pub async fn modify_vendor(_id: String, data: String, update_type: i32) -> Vendo
             .get_result::<Vendor>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => get_default_vendor()
+            Err(_e) => Default::default()
         };
     }
-    get_default_vendor()
+    Default::default()
 }
 
 pub async fn modify_product(_id: String, data: String, update_type: i32) -> Product {
@@ -425,7 +425,7 @@ pub async fn modify_product(_id: String, data: String, update_type: i32) -> Prod
             .get_result::<Product>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => get_default_product()
+            Err(_e) => Default::default()
         };
     }
     else if update_type == ProductUpdateType::Description.value() {
@@ -435,7 +435,7 @@ pub async fn modify_product(_id: String, data: String, update_type: i32) -> Prod
             .get_result::<Product>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => get_default_product()
+            Err(_e) => Default::default()
         };
     }
     else if update_type == ProductUpdateType::Name.value() {
@@ -445,7 +445,7 @@ pub async fn modify_product(_id: String, data: String, update_type: i32) -> Prod
             .get_result::<Product>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => get_default_product()
+            Err(_e) => Default::default()
         };
     }
     else if update_type == ProductUpdateType::Price.value() {
@@ -459,10 +459,10 @@ pub async fn modify_product(_id: String, data: String, update_type: i32) -> Prod
             .get_result::<Product>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => get_default_product()
+            Err(_e) => Default::default()
         };
     }
-    get_default_product()
+    Default::default()
 }
 
 pub async fn create_auth(conn: &mut PgConnection, address:String) -> Authorization {
@@ -488,11 +488,11 @@ async fn find_auth(address: String) -> Authorization {
             if &r.len() > &0 {
                 log(LogLevel::INFO, "Found auth.").await;
                 r.remove(0)
-            } else { get_default_auth() }
+            } else { Default::default() }
         },
         _=> {
                 log(LogLevel::ERROR, "Error finding auth.").await;
-                get_default_auth()
+                Default::default()
         }
     }
 }
@@ -507,7 +507,7 @@ async fn update_auth_expiration(_id: &str) -> Authorization {
         .get_result::<Authorization>(connection);
     match m {
         Ok(m) => m,
-        Err(_e) => get_default_auth()
+        Err(_e) => Default::default()
     }
 }
 
@@ -521,7 +521,7 @@ async fn update_auth_data(_id: &str) -> Authorization {
         .get_result::<Authorization>(connection);
     match m {
         Ok(m) => m,
-        Err(_e) => get_default_auth()
+        Err(_e) => Default::default()
     }
 }
 
@@ -692,47 +692,6 @@ fn get_auth_expiration() -> i64 {
 pub fn is_i2p_check_enabled() -> bool {
     let args = Args::parse();
     !args.disable_i2p_check
-}
-
-fn get_default_customer() -> Customer {
-    Customer { 
-        cid: String::from(""),
-        c_xmr_address: String::from(""),
-        c_name: String::from(""),
-        c_pgp: String::from(""),
-    }
-}
-
-fn get_default_vendor() -> Vendor {
-    Vendor { 
-        vid: String::from(""),
-        v_xmr_address: String::from(""),
-        v_name: String::from(""),
-        v_description: String::from(""),
-        v_pgp: String::from(""),
-        active: false,
-    }
-}
-
-fn get_default_product() -> Product {
-    Product {
-        pid: String::from(""),
-        v_id: String::from(""),
-        in_stock: false,
-        p_description: String::from(""),
-        p_name: String::from(""),
-        p_price: 0,
-        qty: 0,
-    }
-}
-
-pub fn get_default_auth() -> Authorization {
-    Authorization {
-        aid: String::from(""),
-        created: 0,
-        rnd: String::from(""),
-        xmr_address: String::from(""),
-    }
 }
 
 pub fn generate_rnd() -> String {

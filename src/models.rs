@@ -8,6 +8,17 @@ pub struct Customer {
     pub c_pgp: String,
 }
 
+impl Default for Customer {
+    fn default() -> Self {
+        Customer {
+            cid: String::from(""),
+            c_xmr_address: String::from(""),
+            c_name: String::from(""),
+            c_pgp: String::from(""),
+        }
+    }
+}
+
 #[derive(Queryable, Debug)]
 pub struct Vendor {
     pub vid: String,
@@ -16,6 +27,19 @@ pub struct Vendor {
     pub v_description: String,
     pub v_pgp: String,
     pub active: bool,
+}
+
+impl Default for Vendor {
+    fn default() -> Self {
+        Vendor {
+            vid: String::from(""),
+            v_xmr_address: String::from(""),
+            v_name: String::from(""),
+            v_description: String::from(""),
+            v_pgp: String::from(""),
+            active: false,
+        }
+    }
 }
 
 #[derive(Queryable, Debug)]
@@ -27,6 +51,20 @@ pub struct Product {
     pub p_name: String,
     pub p_price: i64,
     pub qty: i64,
+}
+
+impl Default for Product {
+    fn default() -> Self {
+        Product {
+            pid: String::from(""),
+            v_id: String::from(""),
+            in_stock: false,
+            p_description: String::from(""),
+            p_name: String::from(""),
+            p_price: 0,
+            qty: 0,
+        }
+    }
 }
 
 // #[derive(Queryable)]
@@ -44,6 +82,17 @@ pub struct Authorization {
     pub created: i64,
     pub rnd: String,
     pub xmr_address: String,
+}
+
+impl Default for Authorization {
+    fn default() -> Self {
+        Authorization {
+            aid: String::from(""),
+            created: 0,
+            rnd: String::from(""),
+            xmr_address: String::from(""),
+        }
+    }
 }
 
 use crate::schema;
