@@ -14,7 +14,9 @@ use std::fmt::{self, Debug};
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
 
-// Misc. Enumerations
+// TODO: start refactoring this if it grows larger than 10000 lines
+
+// START Misc. Enumerations
 #[derive(Debug)]
 pub enum ApplicationErrors {
     LoginError,
@@ -80,6 +82,32 @@ impl ProductUpdateType {
 }
 
 #[derive(Debug)]
+pub enum OrderStatus {
+    Delivered,
+    MultisigMissing,
+    MulitsigComplete,
+    Signed,
+    Shipped,
+    Submitted,
+}
+
+#[derive(Debug)]
+pub enum OrderUpdateType {
+    CustomerMultisigInfo,
+    Deliver,
+    Hash,
+    Kex1,
+    Kex2,
+    Kex3,
+    SignMultisig,
+    Ship,
+    SubmitMultisig,
+    Status,
+    VendorMultisigInfo,
+    Quantity,
+}
+
+#[derive(Debug)]
 pub enum I2pStatus {
     Accept,
     Reject,
@@ -93,9 +121,9 @@ impl I2pStatus {
         }
     }
 }
-// End Enumerations
+// END Enumerations
 
-// logger
+// START logger
 #[derive(Debug, Clone)]
 pub enum LogLevel {
     DEBUG,
@@ -159,9 +187,9 @@ pub struct Args {
    )]
    token_timeout: i64,
 }
-// end cmd line args
+// END cmd line args
 
-// PGDB stuff
+// START PGDB stuff
 pub async fn establish_pgdb_connection() -> PgConnection {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
@@ -253,6 +281,33 @@ pub async fn create_new_product(v_id: String) -> Product {
         .values(&new_product)
         .get_result(connection)
         .expect("Error saving new product")
+}
+
+pub async fn create_new_order(cid: String, pid: String) -> Order {
+    use crate::schema::orders;
+    let connection = &mut establish_pgdb_connection().await;
+    let ts = chrono::offset::Utc::now().timestamp();
+    let oid: String = generate_rnd();
+    let new_order = NewOrder {
+        orid: &oid,
+        c_id: &cid,
+        p_id: &pid,
+        o_xmr_address: "",
+        o_date: &ts,
+        o_deliver_date: &0,
+        o_ship_date: &0,
+        o_hash: "",
+        o_msig_prepare: "",
+        o_msig_make: "",
+        o_msig_kex: "",
+        o_msig_kex_boost: "",
+        o_status: "",
+        o_quantity: &0,
+    };
+    diesel::insert_into(orders::table)
+        .values(&new_order)
+        .get_result(connection)
+        .expect("Error saving new order")
 }
 
 pub async fn find_vendor_products(_v_id: String) -> Vec<Product> {
@@ -589,7 +644,9 @@ pub async fn check_xmr_rpc_connection() -> () {
     }
 }
 
-pub async fn verify_signature(address: String, data: String, signature: String) -> String {
+pub async fn verify_signature(
+    address: String, data: String, signature: String
+) -> String {
     log(LogLevel::INFO, "Signature verification in progress.").await;
     let client = reqwest::Client::new();
     let host = get_monero_rpc_host();
@@ -626,7 +683,7 @@ pub async fn verify_signature(address: String, data: String, signature: String) 
 }
 // END XMR RPC stuff
 
-// i2p connection verification
+// START i2p connection verification
 /// TODO: create a tunnel for the server at initial startup
 /// if one does not exist. See i2p-zero
 pub async fn check_i2p_connection() -> () {
@@ -670,8 +727,10 @@ pub async fn check_i2p_connection() -> () {
 }
 // END I2P connection verification
 
-// misc helpers
-pub async fn get_login_auth(address: String, corv: String, signature: String) -> Authorization {
+// START misc helpers
+pub async fn get_login_auth(
+    address: String, corv: String, signature: String
+) -> Authorization {
     if corv == LoginType::Customer.value() {
         verify_customer_login(address, signature).await
     } else {

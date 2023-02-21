@@ -122,7 +122,6 @@ async fn get_vendor_products(address: String, signature: String, v_id: String) -
     }
     let m_products: Vec<models::Product> = find_vendor_products(v_id).await;
     let mut v_res: Vec<reqres::GetProductResponse> = Vec::new();
-    // TODO: why cant the db query be serialized and returned?
     for m in m_products {
         let p_res: reqres::GetProductResponse = reqres::GetProductResponse {
             pid: m.pid, v_id: m.v_id, in_stock: m.in_stock,
