@@ -10,16 +10,9 @@ use self::models::*;
 use clap:: Parser;
 use rand_core::RngCore;
 use std::fmt::{self, Debug};
-use async_trait::async_trait;
 
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
-
-use rocket::Request;
-use rocket::request;
-use rocket::http::Status;
-use rocket::request::Outcome;
-use rocket::request::FromRequest;
 
 // Misc. Enumerations
 #[derive(Debug)]
@@ -532,54 +525,32 @@ async fn update_auth_data(_id: &str) -> Authorization {
     }
 }
 
-// Authorization impl
-// https://stackoverflow.com/questions/64829301/how-to-retrieve-http-headers-from-a-request-in-rocket
-
-struct Token(String);
-
-#[derive(Debug)]
-enum ApiTokenError {
-    Missing,
-    Invalid,
-    Expired,
-}
-
-#[async_trait]
-impl<'a, 'r> FromRequest<'r> for Token {
-    type Error = ApiTokenError;
-
-    async fn from_request(request: &'a Request<'r>) -> request::Outcome<Self, Self::Error> {
-        let token = request.headers().get_one("authorization");
-        match token {
-            Some(token) => {
-                // extract address
-                let split = token.split(":");
-                let mut v: Vec<String> = split.map(|s| s.to_string()).collect();
-                let address: String = v.remove(0);
-                let signature: String = v.remove(1);
-                // look up auth for address
-                let f_auth: Authorization = find_auth(address).await;
-                // check expiration, generate new data to sign if necessary
-                let now: i64 = chrono::offset::Utc::now().timestamp();
-                let expiration = get_auth_expiration();
-                if now > f_auth.created + expiration {
-                    update_auth_expiration(&f_auth.aid).await;
-                    update_auth_data(&f_auth.aid).await;
-                    return Outcome::Failure((Status::Unauthorized, ApiTokenError::Expired));
-                }
-                // verify signature on the data if not expired
-                let data = f_auth.rnd;
-                let sig_address: String = verify_signature(address, data, signature).await;
-                if sig_address == ApplicationErrors::LoginError.to_string() {
-                    return Outcome::Failure((Status::Unauthorized, ApiTokenError::Invalid));
-                }
-                return Outcome::Success(Token(token.to_string()));
-            }
-            None => Outcome::Failure((Status::Unauthorized, ApiTokenError::Missing)),
+/// TODO: this is a temporary workaround
+/// from_request doesn't support async_trait
+/// and we need that to verify the authorization header
+pub async fn verify_access(address: &str, signature: &str) -> bool {
+    // look up auth for address
+    let f_auth: Authorization = find_auth(String::from(address)).await;
+    if f_auth.xmr_address != String::from("") {
+        // check expiration, generate new data to sign if necessary
+        let now: i64 = chrono::offset::Utc::now().timestamp();
+        let expiration = get_auth_expiration();
+        if now > f_auth.created + expiration {
+            update_auth_expiration(&f_auth.aid).await;
+            update_auth_data(&f_auth.aid).await;
+            return false;
         }
     }
+    // verify signature on the data if not expired
+    let data = f_auth.rnd;
+    let sig_address: String = verify_signature(
+        String::from(address), data, String::from(signature)
+    ).await;
+    if sig_address == ApplicationErrors::LoginError.to_string() {
+        return false;
+    }
+    return true;
 }
-// End Authorization impl
 // END PGDB stuff
 
 // XMR RPC stuff

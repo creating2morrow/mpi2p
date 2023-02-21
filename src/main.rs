@@ -30,8 +30,16 @@ async fn get_version() -> Custom<Json<reqres::XmrApiVersionResponse>> {
 }
 
 /// Return a single customer's information
-#[get("/<address>")]
-async fn get_customer(address: String) -> Custom<Json<reqres::GetCustomerResponse>> {
+#[get("/<address>/<signature>")]
+async fn get_customer(address: String, signature: String) -> Custom<Json<reqres::GetCustomerResponse>> {
+    let is_verified: bool = verify_access(&address, &signature).await;
+    if !is_verified {
+        let res: reqres::GetCustomerResponse = reqres::GetCustomerResponse {
+            cid: String::from(""), address: String::from(""),
+            name: String::from(""), pgp: String::from(""),
+        };
+        return Custom(Status::Unauthorized, Json(res));
+    }
     let m_customer: models::Customer = find_customer(address).await;
     let res: reqres::GetCustomerResponse = reqres::GetCustomerResponse {
         cid: m_customer.cid, address: m_customer.c_xmr_address,
@@ -41,8 +49,16 @@ async fn get_customer(address: String) -> Custom<Json<reqres::GetCustomerRespons
 }
 
 /// Get a single vendor's information
-#[get("/<address>")]
-async fn get_vendor(address: String) -> Custom<Json<reqres::GetVendorResponse>> {
+#[get("/<address>/<signature>")]
+async fn get_vendor(address: String, signature: String) -> Custom<Json<reqres::GetVendorResponse>> {
+    let is_verified: bool = verify_access(&address, &signature).await;
+    if !is_verified {
+        let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
+            vid: String::from(""), active: false, address: String::from(""),
+            description: String::from(""), name: String::from(""), pgp: String::from(""),
+        };
+        return Custom(Status::Unauthorized, Json(res));
+    }
     let m_vendor: models::Vendor = find_vendor(address).await;
     let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
         vid: m_vendor.vid, active: m_vendor.active, address: m_vendor.v_xmr_address,
