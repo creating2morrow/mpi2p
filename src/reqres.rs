@@ -58,6 +58,17 @@ pub struct GetCustomerResponse {
     pub pgp: String,
 }
 
+impl Default for GetCustomerResponse {
+    fn default() -> Self {
+        GetCustomerResponse {
+            address: String::from(""),
+            cid: String::from(""),
+            name: String::from(""),
+            pgp: String::from(""),
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct GetVendorResponse {
@@ -67,6 +78,19 @@ pub struct GetVendorResponse {
     pub vid: String,
     pub name: String,
     pub pgp: String,
+}
+
+impl Default for GetVendorResponse {
+    fn default() -> Self {
+        GetVendorResponse {
+            active: false,
+            address: String::from(""),
+            description: String::from(""),
+            vid: String::from(""),
+            name: String::from(""),
+            pgp: String::from(""),
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -81,10 +105,32 @@ pub struct GetProductResponse {
     pub qty: i64,
 }
 
+impl Default for GetProductResponse {
+    fn default() -> Self {
+        GetProductResponse {
+            pid: String::from(""),
+            v_id: String::from(""),
+            in_stock: false,
+            description: String::from(""),
+            name: String::from(""),
+            price: 0,
+            qty: 0,
+        }
+    }
+}
+
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
 pub struct GetVendorProductResponse {
     pub products: Vec<GetProductResponse>,
+}
+
+impl Default for GetVendorProductResponse {
+    fn default() -> Self {
+        GetVendorProductResponse {
+            products: Vec::new()
+        }
+    }
 }
 
 #[derive(Serialize, Deserialize)]
@@ -94,4 +140,15 @@ pub struct GetAuthResponse {
     pub aid: String,
     pub created: i64,
     pub data: String,
+}
+
+impl Default for GetAuthResponse {
+    fn default() -> Self {
+        GetAuthResponse {
+            address: String::from(""),
+            aid: String::from(""),
+            created: 0,
+            data: String::from(""),
+        }
+    }
 }

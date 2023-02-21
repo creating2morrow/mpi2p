@@ -22,6 +22,7 @@ use mpi2p::*;
 // JSON APIs
 
 /// Get payment API version
+/// Protected: false
 #[get("/version")]
 async fn get_version() -> Custom<Json<reqres::XmrApiVersionResponse>> {
     let res: reqres::XmrRpcVersionResponse = get_xmr_version().await;
@@ -30,14 +31,12 @@ async fn get_version() -> Custom<Json<reqres::XmrApiVersionResponse>> {
 }
 
 /// Return a single customer's information
+/// Protected: true
 #[get("/<address>/<signature>")]
 async fn get_customer(address: String, signature: String) -> Custom<Json<reqres::GetCustomerResponse>> {
     let is_verified: bool = verify_access(&address, &signature).await;
     if !is_verified {
-        let res: reqres::GetCustomerResponse = reqres::GetCustomerResponse {
-            cid: String::from(""), address: String::from(""),
-            name: String::from(""), pgp: String::from(""),
-        };
+        let res: reqres::GetCustomerResponse = Default::default();
         return Custom(Status::Unauthorized, Json(res));
     }
     let m_customer: models::Customer = find_customer(address).await;
@@ -49,14 +48,12 @@ async fn get_customer(address: String, signature: String) -> Custom<Json<reqres:
 }
 
 /// Get a single vendor's information
+/// Protected: true
 #[get("/<address>/<signature>")]
 async fn get_vendor(address: String, signature: String) -> Custom<Json<reqres::GetVendorResponse>> {
     let is_verified: bool = verify_access(&address, &signature).await;
     if !is_verified {
-        let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
-            vid: String::from(""), active: false, address: String::from(""),
-            description: String::from(""), name: String::from(""), pgp: String::from(""),
-        };
+        let res: reqres::GetVendorResponse = Default::default();
         return Custom(Status::Unauthorized, Json(res));
     }
     let m_vendor: models::Vendor = find_vendor(address).await;
@@ -93,8 +90,15 @@ async fn update_customer(id: String, data: String, update_type: i32) -> Custom<J
 }
 
 /// Update vendor information
-#[patch("/update/<id>/<data>/<update_type>")]
-async fn update_vendor(id: String, data: String, update_type: i32) -> Custom<Json<reqres::GetVendorResponse>> {
+#[patch("/<address>/<signature>/update/<id>/<data>/<update_type>")]
+async fn update_vendor(
+    address: String, signature: String, id: String, data: String, update_type: i32
+) -> Custom<Json<reqres::GetVendorResponse>> {
+    let is_verified: bool = verify_access(&address, &signature).await;
+    if !is_verified {
+        let res: reqres::GetVendorResponse = Default::default();
+        return Custom(Status::Unauthorized, Json(res));
+    }
     let m_vendor = modify_vendor(id, data, update_type).await;
     let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
        vid: m_vendor.vid, active: m_vendor.active, address: m_vendor.v_xmr_address,
@@ -104,8 +108,13 @@ async fn update_vendor(id: String, data: String, update_type: i32) -> Custom<Jso
 }
 
 /// Create a product by passing vendor id
-#[get("/create/<v_id>")]
-async fn create_product(v_id: String) -> Custom<Json<reqres::GetProductResponse>> {
+#[get("/<address>/<signature>/create/<v_id>")]
+async fn create_product(address: String, signature: String, v_id: String) -> Custom<Json<reqres::GetProductResponse>> {
+    let is_verified: bool = verify_access(&address, &signature).await;
+    if !is_verified {
+        let res: reqres::GetProductResponse = Default::default();
+        return Custom(Status::Unauthorized, Json(res));
+    }
     let m_product: models::Product = create_new_product(v_id).await;
     let res: reqres::GetProductResponse = reqres::GetProductResponse {
         pid: m_product.pid, v_id: m_product.v_id, in_stock: m_product.in_stock,
@@ -116,8 +125,13 @@ async fn create_product(v_id: String) -> Custom<Json<reqres::GetProductResponse>
 }
 
 /// Get all products by passing vendor id
-#[get("/<v_id>")]
-async fn get_vendor_products(v_id: String) -> Custom<Json<reqres::GetVendorProductResponse>> {
+#[get("/<address>/<signature>/<v_id>")]
+async fn get_vendor_products(address: String, signature: String, v_id: String) -> Custom<Json<reqres::GetVendorProductResponse>> {
+    let is_verified: bool = verify_access(&address, &signature).await;
+    if !is_verified {
+        let res: reqres::GetVendorProductResponse = Default::default();
+        return Custom(Status::Unauthorized, Json(res));
+    }
     let m_products: Vec<models::Product> = find_vendor_products(v_id).await;
     let mut v_res: Vec<reqres::GetProductResponse> = Vec::new();
     // TODO: why cant the db query be serialized and returned?
@@ -133,10 +147,15 @@ async fn get_vendor_products(v_id: String) -> Custom<Json<reqres::GetVendorProdu
 }
 
 /// Update product information
-#[patch("/update/<id>/<data>/<update_type>")]
+#[patch("/<address>/<signature>/update/<id>/<data>/<update_type>")]
 async fn update_product(
-    id: String, data: String, update_type: i32
+    address: String, signature: String, id: String, data: String, update_type: i32
 ) -> Custom<Json<reqres::GetProductResponse>> {
+    let is_verified: bool = verify_access(&address, &signature).await;
+    if !is_verified {
+        let res: reqres::GetProductResponse = Default::default();
+        return Custom(Status::Unauthorized, Json(res));
+    }
     let m_product = modify_product(id, data, update_type).await;
     let res: reqres::GetProductResponse = reqres::GetProductResponse {
         pid: m_product.pid, v_id: m_product.v_id, in_stock: m_product.in_stock,
