@@ -7,18 +7,6 @@ use mpi2p::*;
 
 #[cfg(test)] mod tests;
 
-/*
- TODO:
-   - signature verification on update apis !!!
-   - header "token" verification implementation
-      - login api wont have this
-      - match address to vendor or customer
-      - implement guard and http status
-   - create_order
-   - get_order/(s) * vendor or customer
-   - update_order (multsig stuff is here (T_T))
-*/
-
 // JSON APIs
 
 /// Get payment API version
@@ -165,6 +153,7 @@ async fn update_product(
     Custom(Status::Accepted, Json(res))
 }
 // END JSON APIs
+
 
 #[launch]
 async fn rocket() -> _ {

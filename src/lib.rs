@@ -528,6 +528,7 @@ async fn update_auth_data(_id: &str) -> Authorization {
 /// TODO: this is a temporary workaround
 /// from_request doesn't support async_trait
 /// and we need that to verify the authorization header
+/// migrate to async from_request impl
 pub async fn verify_access(address: &str, signature: &str) -> bool {
     // look up auth for address
     let f_auth: Authorization = find_auth(String::from(address)).await;

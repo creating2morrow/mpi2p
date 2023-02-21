@@ -67,14 +67,23 @@ impl Default for Product {
     }
 }
 
-// #[derive(Queryable)]
-// pub struct Order {
-//     pub orid: i32,
-//     pub c_id: String,
-//     pub p_id: String,
-//     pub o_date: i32,
-//     pub o_hash: String,
-// }
+#[derive(Queryable)]
+pub struct Order {
+       pub orid: String,
+       pub c_id: String,
+       pub p_id: String,
+       pub o_xmr_address: String,
+       pub o_date: i64,
+       pub o_deliver_date: i64,
+       pub o_ship_date: i64,
+       pub o_hash: String,
+       pub o_msig_prepare: String,
+       pub o_msig_make: String,
+       pub o_msig_kex: String,
+       pub o_msig_kex_boost: String,
+       pub o_status: String,
+       pub o_quantity: i64
+}
 
 #[derive(Queryable)]
 pub struct Authorization {
@@ -136,4 +145,23 @@ pub struct NewAuthorization<'a> {
     pub created: &'a i64,
     pub rnd: &'a str,
     pub xmr_address: &'a str,
+}
+
+#[derive(Insertable)]
+#[diesel(table_name = schema::orders)]
+pub struct NewOrder<'a> {
+       pub orid: &'a str,
+       pub c_id: &'a str,
+       pub p_id: &'a str,
+       pub o_xmr_address: &'a str,
+       pub o_date: &'a i64,
+       pub o_deliver_date: &'a i64,
+       pub o_ship_date: &'a i64,
+       pub o_hash: &'a str,
+       pub o_msig_prepare: &'a str,
+       pub o_msig_make: &'a str,
+       pub o_msig_kex: &'a str,
+       pub o_msig_kex_boost: &'a str,
+       pub o_status: &'a str,
+       pub o_quantity: &'a i64
 }

@@ -16,25 +16,25 @@ curl http://127.0.0.1:38083/json_rpc -d '{"jsonrpc":"2.0","id":"0","method":"get
 # signature - generate signature with wallet private keys
 curl http://127.0.0.1:8000/login/<customer|vendor>/<XMR_ADDRESS>/<SIGNATURE>
 
-# update
+# [PATCH] update
 # customer or vendor URI
 # <id> - i32
 # <data> - String
 # <update_type> - Enum => 0 - active, 1 - description, 2 - name, 3 - pgp
-curl -X PATCH http://127.0.0.1:8000/<customer|vendor>/update/<id>/<data>/<update_type>
+curl -X PATCH http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/<customer|vendor>/update/<id>/<data>/<update_type>
 
 # get
 # create a new product
 # <vid> - vendor id
-curl -iv http://127.0.0.1:8000/product/create/<vid>
+curl -iv http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/product/create/<vid>
 
 # get
 # return all products for a vendor
 # <vid> - vendor id
-curl -iv http://127.0.0.1:8000/products/<vid>
+curl -iv http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/products/<vid>
 
 # update product
 # <pid> - i32
 # <data> - String
 # <update_type> - Enum => 0 - in_stock, 1 - description, 2 - name, 3 - price 4 - qty
-curl -X PATCH http://127.0.0.1:8000/product/update/<pid>/<data>/<update_type>
+curl -X PATCH http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/product/update/<pid>/<data>/<update_type>

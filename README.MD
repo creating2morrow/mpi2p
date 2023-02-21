@@ -54,14 +54,15 @@ is screened accordingly. The login API is used to get the random data.
 
 ### Authentication
 
-* /login/<customer|vendor>/<address>/<data>/<signature>
+* /login/<customer|vendor>/<address>/<signature>
 * on initial request just send address and signature but it doesn't matter any string
 * get auth response and sign the `data` in it with xmr wallet [sign]() feature
 * call the login API a second time to create customer or vendor
 
 ### Authorization
 
-* set `Authorization: <ADDRESS>:<SIGNATURE>` on subsequent requests
+* protected APIs currently require address/signature path parameters
+* Future use: set `Authorization: <ADDRESS>:<SIGNATURE>` on subsequent requests
 * address must match the one on file during login
 * if auth expiration then new data must be signed (default : 60 minutes)
 * call the login API again to refresh and sign new data
@@ -83,15 +84,14 @@ is screened accordingly. The login API is used to get the random data.
 ## Status
 
 * [x] Initial commit
-* [ ] Authorization flow - 3/23
-* [ ] Customer APIs - 4/23
-* [ ] Vendor APIs - 5/23
-* [ ] Product APIs - 6/23
-* [ ] Order APIs / Monero Multisignature integration - 7/23
-* [ ] Decentralized P2P i2p connectivity - 8/23
-* [ ] Unit tests - 9/23
-* [ ] Functional tests - 9/23
-* [ ] Pentest - 9/23
-* [ ] Documentation - 10/23
-* [ ] GUI - 11/23
-* [ ] Beta release v0.1.0-beta 12/23
+* [x] Customer APIs
+* [x] Vendor APIs
+* [x] Product APIs
+* [ ] Order APIs / Monero Multisignature integration - 3/23
+* [ ] From_Request Async Trait Authorization flow - 4/23
+* [ ] Unit tests - 5/23
+* [ ] Functional tests - 5/23
+* [ ] Pentest - 5/23
+* [ ] Documentation - 5/23
+* [ ] GUI - 6/23
+* [ ] Beta release v0.1.0-beta 6/23
