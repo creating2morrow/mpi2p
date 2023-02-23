@@ -73,16 +73,53 @@ pub struct Order {
        pub c_id: String,
        pub p_id: String,
        pub o_xmr_address: String,
+       pub o_cust_msig_info: String,
+       pub o_cust_kex_1: String,
+       pub o_cust_kex_2: String,
+       pub o_cust_kex_3: String,
        pub o_date: i64,
        pub o_deliver_date: i64,
        pub o_ship_date: i64,
        pub o_hash: String,
        pub o_msig_prepare: String,
        pub o_msig_make: String,
-       pub o_msig_kex: String,
-       pub o_msig_kex_boost: String,
+       pub o_msig_kex_1: String,
+       pub o_msig_kex_2: String,
+       pub o_msig_kex_3: String,
        pub o_status: String,
-       pub o_quantity: i64
+       pub o_quantity: i64,
+       pub o_vend_kex_1: String,
+       pub o_vend_kex_2: String,
+       pub o_vend_kex_3: String,
+}
+
+impl Default for Order {
+    fn default() -> Self {
+        Order {
+            orid: String::from(""),
+            c_id: String::from(""),
+            p_id: String::from(""),
+            o_xmr_address: String::from(""),
+            o_cust_msig_info: String::from(""),
+            o_cust_kex_1: String::from(""),
+            o_cust_kex_2: String::from(""),
+            o_cust_kex_3: String::from(""),
+            o_date: 0,
+            o_deliver_date: 0,
+            o_ship_date: 0,
+            o_hash: String::from(""),
+            o_msig_prepare: String::from(""),
+            o_msig_make: String::from(""),
+            o_msig_kex_1: String::from(""),
+            o_msig_kex_2: String::from(""),
+            o_msig_kex_3: String::from(""),
+            o_status: String::from(""),
+            o_quantity: 0,
+            o_vend_kex_1: String::from(""),
+            o_vend_kex_2: String::from(""),
+            o_vend_kex_3: String::from(""),
+        }
+    }
 }
 
 #[derive(Queryable)]
@@ -158,10 +195,50 @@ pub struct NewOrder<'a> {
        pub o_deliver_date: &'a i64,
        pub o_ship_date: &'a i64,
        pub o_hash: &'a str,
+       pub o_cust_msig_info: &'a str,
+       pub o_cust_kex_1: &'a str,
+       pub o_cust_kex_2: &'a str,
+       pub o_cust_kex_3: &'a str,
        pub o_msig_prepare: &'a str,
        pub o_msig_make: &'a str,
-       pub o_msig_kex: &'a str,
-       pub o_msig_kex_boost: &'a str,
+       pub o_msig_kex_1: &'a str,
+       pub o_msig_kex_2: &'a str,
+       pub o_msig_kex_3: &'a str,
        pub o_status: &'a str,
-       pub o_quantity: &'a i64
+       pub o_quantity: &'a i64,
+       pub o_vend_kex_1: &'a str,
+       pub o_vend_kex_2: &'a str,
+       pub o_vend_kex_3: &'a str,
 }
+
+/*
+orid VARCHAR PRIMARY KEY,
+  c_id VARCHAR NOT NULL,
+  p_id VARCHAR NOT NULL,
+  CONSTRAINT fk_customer
+      FOREIGN KEY(c_id) 
+	    REFERENCES customers(cid),
+  CONSTRAINT fk_product
+      FOREIGN KEY(p_id) 
+	    REFERENCES products(pid),
+  o_xmr_address VARCHAR NOT NULL,
+  o_cust_msig_info VARCHAR NOT NULL,
+  o_cust_kex_1 VARCHAR NOT NULL,
+  o_cust_kex_2 VARCHAR NOT NULL,
+  o_cust_kex_3 VARCHAR NOT NULL,
+  o_date BIGINT NOT NULL,
+  o_deliver_date BIGINT NOT NULL,
+  o_ship_date BIGINT NOT NULL,
+  o_hash VARCHAR NOT NULL,
+  o_msig_prepare TEXT NOT NULL,
+  o_msig_make TEXT NOT NULL,
+  o_msig_kex_1 TEXT NOT NULL,
+  o_msig_kex_2 TEXT NOT NULL,
+  o_msig_kex_3 TEXT NOT NULL,
+  o_status TEXT NOT NULL,
+  o_quantity BIGINT NOT NULL,
+  o_cust_msig_info VARCHAR NOT NULL,
+  o_vend_kex_1 VARCHAR NOT NULL,
+  o_vend_kex_2 VARCHAR NOT NULL,
+  o_vend_kex_3 VARCHAR NOT NULL,
+*/

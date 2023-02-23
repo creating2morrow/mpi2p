@@ -84,6 +84,7 @@ impl ProductUpdateType {
 #[derive(Debug)]
 pub enum OrderStatus {
     Delivered,
+    Error,
     MultisigMissing,
     MulitsigComplete,
     Signed,
@@ -93,16 +94,19 @@ pub enum OrderStatus {
 
 #[derive(Debug)]
 pub enum OrderUpdateType {
+    CustomerKex1,
+    CustomerKex2,
+    CustomerKex3,
     CustomerMultisigInfo,
     Deliver,
     Hash,
-    Kex1,
-    Kex2,
-    Kex3,
     SignMultisig,
     Ship,
     SubmitMultisig,
     Status,
+    VendorKex1,
+    VendorKex2,
+    VendorKex3,
     VendorMultisigInfo,
     Quantity,
 }
@@ -292,17 +296,25 @@ pub async fn create_new_order(cid: String, pid: String) -> Order {
         orid: &oid,
         c_id: &cid,
         p_id: &pid,
+        o_cust_kex_1: "",
+        o_cust_kex_2: "",
+        o_cust_kex_3: "",
         o_xmr_address: "",
+        o_cust_msig_info: "",
         o_date: &ts,
         o_deliver_date: &0,
         o_ship_date: &0,
         o_hash: "",
         o_msig_prepare: "",
         o_msig_make: "",
-        o_msig_kex: "",
-        o_msig_kex_boost: "",
+        o_msig_kex_1: "",
+        o_msig_kex_2: "",
+        o_msig_kex_3: "",
         o_status: "",
         o_quantity: &0,
+        o_vend_kex_1: "",
+        o_vend_kex_2: "",
+        o_vend_kex_3: "",
     };
     diesel::insert_into(orders::table)
         .values(&new_order)
