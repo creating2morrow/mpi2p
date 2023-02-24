@@ -48,7 +48,6 @@ is screened accordingly. The login API is used to get the random data.
 
 {in progress}: encrypt the plain-text auth into a JWT.
 * make the expiration of the tokens configurable at run-time
-* pentest
 
 ## Authentication / Authorization Lifecycle
 
@@ -62,14 +61,14 @@ is screened accordingly. The login API is used to get the random data.
 ### Authorization
 
 * protected APIs currently require address/signature path parameters
-* Future use: set `Authorization: <ADDRESS>:<SIGNATURE>` on subsequent requests
+* <i>Future use</i>: set `Authorization: <ADDRESS>:<SIGNATURE>` on subsequent requests
 * address must match the one on file during login
 * if auth expiration then new data must be signed (default : 60 minutes)
 * call the login API again to refresh and sign new data
 * the login API will create customer or vendor if they dont exist
 * to check for existence use auth header and xmr address in the /customer|vendor/<ADDRESS> API
 
-## Order Lifecycle
+## High Level Order Lifecycle
 
 * vendor adds a new product with description and price
 * customer orders product

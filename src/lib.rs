@@ -201,9 +201,8 @@ pub async fn establish_pgdb_connection() -> PgConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
 }
 
-async fn create_customer(
-    conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str
-) -> Customer {
+async fn create_customer
+(conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str) -> Customer {
     use crate::schema::customers;
     let cid: String = generate_rnd();
     let new_customer = NewCustomer { cid: &cid, c_xmr_address, c_name, c_pgp };
@@ -232,10 +231,9 @@ pub async fn find_customer(address: String) -> Customer {
     }
 }
 
-async fn create_vendor(
-    conn: &mut PgConnection, v_xmr_address: &str, v_name: &str, v_pgp: &str,
-    v_description: &str, active: &bool
-) -> Vendor {
+async fn create_vendor
+(conn: &mut PgConnection, v_xmr_address: &str,
+v_name: &str, v_pgp: &str,v_description: &str, active: &bool) -> Vendor {
     use crate::schema::vendors;
     let vid: String = generate_rnd();
     let new_vendor = NewVendor {
@@ -740,9 +738,8 @@ pub async fn check_i2p_connection() -> () {
 // END I2P connection verification
 
 // START misc helpers
-pub async fn get_login_auth(
-    address: String, corv: String, signature: String
-) -> Authorization {
+pub async fn get_login_auth
+(address: String, corv: String, signature: String) -> Authorization {
     if corv == LoginType::Customer.value() {
         verify_customer_login(address, signature).await
     } else {
@@ -772,3 +769,14 @@ pub fn generate_rnd() -> String {
     hex::encode(data)
 }
 // END misc. helpers
+
+// START response builders
+impl reqres::GetCustomerResponse {
+    pub fn build(m_customer: models::Customer) -> Self {
+        reqres::GetCustomerResponse {
+            cid: m_customer.cid, address: m_customer.c_xmr_address,
+            name: m_customer.c_name, pgp: m_customer.c_pgp,
+        }
+    }
+}
+// END response builders

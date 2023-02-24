@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+
 // All http requests and responses are here
 
 #[derive(Deserialize, Debug)]
@@ -149,6 +150,62 @@ impl Default for GetAuthResponse {
             aid: String::from(""),
             created: 0,
             data: String::from(""),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct InitializeOrderResponse {
+    pub orid: String,
+    pub cid: String,
+    pub pid: String,
+    pub xmr_address: String,
+    pub cust_msig_info: String,
+    pub cust_kex_1: String,
+    pub cust_kex_2: String,
+    pub cust_kex_3: String,
+    pub date: i64,
+    pub deliver_date: i64,
+    pub ship_date: i64,
+    pub hash: String,
+    pub msig_prepare: String,
+    pub msig_make: String,
+    pub msig_kex_1: String,
+    pub msig_kex_2: String,
+    pub msig_kex_3: String,
+    pub status: String,
+    pub quantity: i64,
+    pub vend_kex_1: String,
+    pub vend_kex_2: String,
+    pub vend_kex_3: String,
+}
+
+impl Default for InitializeOrderResponse {
+    fn default() -> Self {
+        InitializeOrderResponse {
+            orid: String::from(""),
+            cid: String::from(""),
+            pid: String::from(""),
+            xmr_address: String::from(""),
+            cust_msig_info: String::from(""),
+            cust_kex_1: String::from(""),
+            cust_kex_2: String::from(""),
+            cust_kex_3: String::from(""),
+            date: 0,
+            deliver_date: 0,
+            ship_date: 0,
+            hash: String::from(""),
+            msig_prepare: String::from(""),
+            msig_make: String::from(""),
+            msig_kex_1: String::from(""),
+            msig_kex_2: String::from(""),
+            msig_kex_3: String::from(""),
+            status: String::from(""),
+            quantity: 0,
+            vend_kex_1: String::from(""),
+            vend_kex_2: String::from(""),
+            vend_kex_3: String::from(""),
         }
     }
 }

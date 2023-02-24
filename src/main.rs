@@ -9,6 +9,8 @@ use mpi2p::*;
 
 // JSON APIs
 
+// TODO: create builders for the JSON resposnes
+
 /// Get payment API version
 /// Protected: false
 #[get("/version")]
@@ -28,11 +30,7 @@ async fn get_customer(address: String, signature: String) -> Custom<Json<reqres:
         return Custom(Status::Unauthorized, Json(res));
     }
     let m_customer: models::Customer = find_customer(address).await;
-    let res: reqres::GetCustomerResponse = reqres::GetCustomerResponse {
-        cid: m_customer.cid, address: m_customer.c_xmr_address,
-        name: m_customer.c_name, pgp: m_customer.c_pgp,
-    };
-    Custom(Status::Accepted, Json(res))
+    Custom(Status::Accepted, Json(reqres::GetCustomerResponse::build(m_customer)))
 }
 
 /// Get a single vendor's information
@@ -151,6 +149,36 @@ async fn update_product(
     };
     Custom(Status::Accepted, Json(res))
 }
+
+/// Initialize order
+#[get("/<address>/<signature>/create/<pid>")]
+async fn initialize_order
+(address: String, signature: String, pid: String)
+ -> Custom<Json<reqres::InitializeOrderResponse>> {
+    let is_verified: bool = verify_access(&address, &signature).await;
+    if !is_verified {
+        let res: reqres::InitializeOrderResponse = Default::default();
+        return Custom(Status::Unauthorized, Json(res));
+    }
+    // get the cid from the address after verification
+    let m_customer = find_customer(address).await;
+    let temp_pid = String::from(&pid);
+    let m_order: models::Order = create_new_order(m_customer.cid, temp_pid).await;
+    let res: reqres::InitializeOrderResponse = reqres::InitializeOrderResponse {
+        orid: m_order.orid, cid: m_order.c_id, pid, xmr_address: m_order.o_xmr_address,
+        cust_msig_info: m_order.o_cust_msig_info, cust_kex_1: m_order.o_cust_kex_1,
+        cust_kex_2: m_order.o_cust_kex_2, cust_kex_3: m_order.o_cust_kex_3, 
+        date: m_order.o_date, deliver_date: m_order.o_deliver_date,
+        ship_date: m_order.o_ship_date, hash: m_order.o_hash, 
+        msig_prepare: m_order.o_msig_prepare, msig_make: m_order.o_msig_make,
+        msig_kex_1: m_order.o_msig_kex_1, msig_kex_2: m_order.o_msig_kex_2,
+        msig_kex_3: m_order.o_msig_kex_3, status: m_order.o_status,
+        quantity: m_order.o_quantity, vend_kex_1: m_order.o_vend_kex_1,
+        vend_kex_2: m_order.o_vend_kex_2, vend_kex_3: m_order.o_vend_kex_3,
+    };
+    Custom(Status::Accepted, Json(res))
+}
+
 // END JSON APIs
 
 
@@ -169,6 +197,6 @@ async fn rocket() -> _ {
         .mount("/vendor", routes![get_vendor, update_vendor])
         .mount("/product", routes![create_product, update_product])
         .mount("/products", routes![get_vendor_products])
-        // .mount("/order", routes![get_order, update_order])
+        .mount("/order", routes![initialize_order])
         .mount("/xmr", routes![get_version])
 }
