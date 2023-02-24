@@ -3,9 +3,7 @@ pub mod schema;
 pub mod reqres;
 
 use hex;
-use std::env;
 use chrono;
-use dotenv::dotenv;
 use self::models::*;
 use clap:: Parser;
 use rand_core::RngCore;
@@ -166,6 +164,14 @@ pub struct Args {
         default_value = "false",
     )]
    disable_i2p_check: bool,
+   /// check i2p
+   #[arg(
+        short,
+        long,
+        help = "Set release environment (dev, prod)",
+        default_value = "dev",
+    )]
+   release_env: String,
     /// Log Level
    #[arg(
         short,
@@ -182,6 +188,14 @@ pub struct Args {
         default_value = "http://localhost:38083",
    )]
    monero_rpc_host: String,
+   /// Monero RPC HOST
+   #[arg(
+        short,
+        long,
+        help = "Postgres db url",
+        default_value = "postgres://postgres:postgres@127.0.0.1:5432/postgres",
+   )]
+   postgres_db_url: String,
    /// Token expiration in minutes
    #[arg(
         short,
@@ -195,14 +209,15 @@ pub struct Args {
 
 // START PGDB stuff
 pub async fn establish_pgdb_connection() -> PgConnection {
-    dotenv().ok();
-    let database_url = env::var("DATABASE_URL").expect("DATABASE_URL must be set");
-    PgConnection::establish(&database_url)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", database_url))
+    let args = Args::parse();
+    let db_string: String = args.postgres_db_url.to_string();
+    PgConnection::establish(&db_string)
+        .unwrap_or_else(|_| panic!("Error connecting to {}", db_string))
 }
 
 async fn create_customer
-(conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str) -> Customer {
+(conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str) ->
+Customer {
     use crate::schema::customers;
     let cid: String = generate_rnd();
     let new_customer = NewCustomer { cid: &cid, c_xmr_address, c_name, c_pgp };
@@ -339,7 +354,8 @@ pub async fn find_vendor_products(_v_id: String) -> Vec<Product> {
     }
 }
 
-pub async fn verify_customer_login(address: String, signature: String) -> Authorization {
+pub async fn verify_customer_login(address: String, signature: String) ->
+Authorization {
     use self::schema::customers::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     let f_address = String::from(&address);
@@ -372,7 +388,8 @@ pub async fn verify_customer_login(address: String, signature: String) -> Author
     }
 }
 
-pub async fn verify_vendor_login(address: String, signature: String) -> Authorization {
+pub async fn verify_vendor_login(address: String, signature: String) ->
+Authorization {
     use self::schema::vendors::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     let f_address = String::from(&address);
@@ -405,7 +422,8 @@ pub async fn verify_vendor_login(address: String, signature: String) -> Authoriz
     }
 }
 
-pub async fn modify_customer(_id: String, data: String, update_type: i32) -> Customer {
+pub async fn modify_customer(_id: String, data: String, update_type: i32) ->
+Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     if update_type == VendorUpdateType::Name.value() {
@@ -431,7 +449,8 @@ pub async fn modify_customer(_id: String, data: String, update_type: i32) -> Cus
     Default::default()
 }
 
-pub async fn modify_vendor(_id: String, data: String, update_type: i32) -> Vendor {
+pub async fn modify_vendor(_id: String, data: String, update_type: i32) ->
+Vendor {
     use self::schema::vendors::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     if update_type == VendorUpdateType::Active.value() {
@@ -477,7 +496,8 @@ pub async fn modify_vendor(_id: String, data: String, update_type: i32) -> Vendo
     Default::default()
 }
 
-pub async fn modify_product(_id: String, data: String, update_type: i32) -> Product {
+pub async fn modify_product(_id: String, data: String, update_type: i32) ->
+Product {
     use self::schema::products::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     // TODO: this isn't right. The product should automatically
@@ -530,7 +550,8 @@ pub async fn modify_product(_id: String, data: String, update_type: i32) -> Prod
     Default::default()
 }
 
-pub async fn create_auth(conn: &mut PgConnection, address:String) -> Authorization {
+pub async fn create_auth(conn: &mut PgConnection, address:String) ->
+Authorization {
     use crate::schema::authorizations;
     let aid: String = generate_rnd();
     let rnd: String = generate_rnd();
@@ -691,11 +712,15 @@ pub async fn verify_signature(
         }
     }
 }
+
+// START Multisig
+
+// END Multisig
 // END XMR RPC stuff
 
 // START i2p connection verification
 /// TODO: create a tunnel for the server at initial startup
-/// if one does not exist. See i2p-zero
+/// if one does not exist. See https://github.com/i2p-zero/i2p-zero
 pub async fn check_i2p_connection() -> () {
     let client = reqwest::Client::new();
     let host = "http://localhost:7657/tunnels";
