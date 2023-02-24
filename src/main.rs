@@ -9,8 +9,6 @@ use mpi2p::*;
 
 // JSON APIs
 
-// TODO: create builders for the JSON resposnes
-
 /// Get payment API version
 /// Protected: false
 #[get("/version")]
@@ -39,58 +37,42 @@ async fn get_customer(address: String, signature: String) -> Custom<Json<reqres:
 async fn get_vendor(address: String, signature: String) -> Custom<Json<reqres::GetVendorResponse>> {
     let is_verified: bool = verify_access(&address, &signature).await;
     if !is_verified {
-        let res: reqres::GetVendorResponse = Default::default();
-        return Custom(Status::Unauthorized, Json(res));
+        return Custom(Status::Unauthorized, Json(Default::default()));
     }
     let m_vendor: models::Vendor = find_vendor(address).await;
-    let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
-        vid: m_vendor.vid, active: m_vendor.active, address: m_vendor.v_xmr_address,
-        description: m_vendor.v_description,
-        name: m_vendor.v_name,pgp: m_vendor.v_pgp,
-    };
-    if res.address == String::from("") {
-        return Custom(Status::NotFound, Json(res));
+    if m_vendor.v_xmr_address == String::from("") {
+        return Custom(Status::NotFound, Json(Default::default()));
     }
-    Custom(Status::Accepted, Json(res))
+    Custom(Status::Accepted, Json(reqres::GetVendorResponse::build(m_vendor)))
 }
 
 /// Login with wallet signature
 #[get("/login/<corv>/<address>/<signature>")]
 async fn login(address: String, corv: String, signature: String) -> Custom<Json<reqres::GetAuthResponse>> {
     let m_auth: models::Authorization = get_login_auth(address, corv, signature).await;
-    let res: reqres::GetAuthResponse = reqres::GetAuthResponse {
-        address: m_auth.xmr_address, aid: m_auth.aid, data: m_auth.rnd, created: m_auth.created,
-    };
-    Custom(Status::Accepted, Json(res))
+    Custom(Status::Accepted, Json(reqres::GetAuthResponse::build(m_auth)))
 }
 
 /// Update customer information
 #[patch("/update/<id>/<data>/<update_type>")]
 async fn update_customer(id: String, data: String, update_type: i32) -> Custom<Json<reqres::GetCustomerResponse>> {
     let m_customer: models::Customer = modify_customer(id, data, update_type).await;
-    let res: reqres::GetCustomerResponse = reqres::GetCustomerResponse {
-        cid: m_customer.cid, address: m_customer.c_xmr_address,
-        name: m_customer.c_name, pgp: m_customer.c_pgp,
-    };
-    Custom(Status::Accepted, Json(res))
+    // TODO: dont pass id, pull info from db after auth
+    Custom(Status::Accepted, Json(reqres::GetCustomerResponse::build(m_customer)))
 }
 
 /// Update vendor information
 #[patch("/<address>/<signature>/update/<id>/<data>/<update_type>")]
-async fn update_vendor(
-    address: String, signature: String, id: String, data: String, update_type: i32
-) -> Custom<Json<reqres::GetVendorResponse>> {
+async fn update_vendor
+(address: String, signature: String, id: String, data: String, update_type: i32)-> 
+Custom<Json<reqres::GetVendorResponse>> {
     let is_verified: bool = verify_access(&address, &signature).await;
     if !is_verified {
-        let res: reqres::GetVendorResponse = Default::default();
-        return Custom(Status::Unauthorized, Json(res));
+        return Custom(Status::Unauthorized, Json(Default::default()));
     }
+    // TODO: dont pass id, pull info from db after auth
     let m_vendor = modify_vendor(id, data, update_type).await;
-    let res: reqres::GetVendorResponse = reqres::GetVendorResponse {
-       vid: m_vendor.vid, active: m_vendor.active, address: m_vendor.v_xmr_address,
-        description: m_vendor.v_description, name: m_vendor.v_name, pgp: m_vendor.v_pgp,
-    };
-    Custom(Status::Accepted, Json(res))
+    Custom(Status::Accepted, Json(reqres::GetVendorResponse::build(m_vendor)))
 }
 
 /// Create a product by passing vendor id
@@ -101,34 +83,23 @@ async fn create_product(address: String, signature: String, v_id: String) -> Cus
         let res: reqres::GetProductResponse = Default::default();
         return Custom(Status::Unauthorized, Json(res));
     }
+    // TODO: dont pass id, pull info from db after auth
     let m_product: models::Product = create_new_product(v_id).await;
-    let res: reqres::GetProductResponse = reqres::GetProductResponse {
-        pid: m_product.pid, v_id: m_product.v_id, in_stock: m_product.in_stock,
-        description: m_product.p_description, name: m_product.p_name,
-        price: m_product.p_price, qty: m_product.qty,
-    };
-    Custom(Status::Accepted, Json(res))
+    Custom(Status::Accepted, Json(reqres::GetProductResponse::build(m_product)))
 }
 
 /// Get all products by passing vendor id
 #[get("/<address>/<signature>/<v_id>")]
-async fn get_vendor_products(address: String, signature: String, v_id: String) -> Custom<Json<reqres::GetVendorProductResponse>> {
+async fn get_vendor_products
+(address: String, signature: String, v_id: String) ->
+Custom<Json<reqres::GetVendorProductsResponse>> {
     let is_verified: bool = verify_access(&address, &signature).await;
     if !is_verified {
-        let res: reqres::GetVendorProductResponse = Default::default();
-        return Custom(Status::Unauthorized, Json(res));
+        return Custom(Status::Unauthorized, Json(Default::default()));
     }
+    // TODO: dont pass vid, pull info from db after auth
     let m_products: Vec<models::Product> = find_vendor_products(v_id).await;
-    let mut v_res: Vec<reqres::GetProductResponse> = Vec::new();
-    for m in m_products {
-        let p_res: reqres::GetProductResponse = reqres::GetProductResponse {
-            pid: m.pid, v_id: m.v_id, in_stock: m.in_stock,
-            description: m.p_description, name: m.p_name,
-            price: m.p_price, qty: m.qty,
-        };
-        v_res.push(p_res);
-    }
-    Custom(Status::Accepted, Json(reqres::GetVendorProductResponse { products: v_res }))
+    Custom(Status::Accepted, Json(reqres::GetVendorProductsResponse::build(m_products)))
 }
 
 /// Update product information
@@ -138,16 +109,11 @@ async fn update_product(
 ) -> Custom<Json<reqres::GetProductResponse>> {
     let is_verified: bool = verify_access(&address, &signature).await;
     if !is_verified {
-        let res: reqres::GetProductResponse = Default::default();
-        return Custom(Status::Unauthorized, Json(res));
+        return Custom(Status::Unauthorized, Json(Default::default()));
     }
+    // TODO: dont pass vid, pull info from db after auth
     let m_product = modify_product(id, data, update_type).await;
-    let res: reqres::GetProductResponse = reqres::GetProductResponse {
-        pid: m_product.pid, v_id: m_product.v_id, in_stock: m_product.in_stock,
-        description: m_product.p_description, name: m_product.p_name,
-        price: m_product.p_price, qty: m_product.qty,
-    };
-    Custom(Status::Accepted, Json(res))
+    Custom(Status::Accepted, Json(reqres::GetProductResponse::build(m_product)))
 }
 
 /// Initialize order
@@ -157,27 +123,20 @@ async fn initialize_order
  -> Custom<Json<reqres::InitializeOrderResponse>> {
     let is_verified: bool = verify_access(&address, &signature).await;
     if !is_verified {
-        let res: reqres::InitializeOrderResponse = Default::default();
-        return Custom(Status::Unauthorized, Json(res));
+        return Custom(Status::Unauthorized, Json(Default::default()));
     }
     // get the cid from the address after verification
     let m_customer = find_customer(address).await;
     let temp_pid = String::from(&pid);
     let m_order: models::Order = create_new_order(m_customer.cid, temp_pid).await;
-    let res: reqres::InitializeOrderResponse = reqres::InitializeOrderResponse {
-        orid: m_order.orid, cid: m_order.c_id, pid, xmr_address: m_order.o_xmr_address,
-        cust_msig_info: m_order.o_cust_msig_info, cust_kex_1: m_order.o_cust_kex_1,
-        cust_kex_2: m_order.o_cust_kex_2, cust_kex_3: m_order.o_cust_kex_3, 
-        date: m_order.o_date, deliver_date: m_order.o_deliver_date,
-        ship_date: m_order.o_ship_date, hash: m_order.o_hash, 
-        msig_prepare: m_order.o_msig_prepare, msig_make: m_order.o_msig_make,
-        msig_kex_1: m_order.o_msig_kex_1, msig_kex_2: m_order.o_msig_kex_2,
-        msig_kex_3: m_order.o_msig_kex_3, status: m_order.o_status,
-        quantity: m_order.o_quantity, vend_kex_1: m_order.o_vend_kex_1,
-        vend_kex_2: m_order.o_vend_kex_2, vend_kex_3: m_order.o_vend_kex_3,
-    };
-    Custom(Status::Accepted, Json(res))
+    Custom(Status::Accepted, Json(reqres::InitializeOrderResponse::build(pid, m_order)))
 }
+
+/// update order
+// oh dear , this will be a bit messy...
+/// Get all orders by passing vendor id
+
+/// Get all orders by passing customer id
 
 // END JSON APIs
 

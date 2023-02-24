@@ -122,13 +122,13 @@ impl Default for GetProductResponse {
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
-pub struct GetVendorProductResponse {
+pub struct GetVendorProductsResponse {
     pub products: Vec<GetProductResponse>,
 }
 
-impl Default for GetVendorProductResponse {
+impl Default for GetVendorProductsResponse {
     fn default() -> Self {
-        GetVendorProductResponse {
+        GetVendorProductsResponse {
             products: Vec::new()
         }
     }
