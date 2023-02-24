@@ -147,10 +147,11 @@ async fn rocket() -> _ {
     // pdgb and monero-wallet-rpc are required to be up at boot time
     establish_pgdb_connection().await;
     check_xmr_rpc_connection().await;
-    if is_i2p_check_enabled() {
+    let env = get_release_env().value();
+    if env != ReleaseEnvironment::Development.value() {
         check_i2p_connection().await;
     }
-    log(LogLevel::INFO, "mpi2p is online").await;
+    log(LogLevel::INFO, &(env + " - mpi2p is online")).await;
     rocket::build()
         .mount("/", routes![login])
         .mount("/customer", routes![get_customer, update_customer])

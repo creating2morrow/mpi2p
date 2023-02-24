@@ -27,6 +27,27 @@ impl fmt::Display for ApplicationErrors {
 }
 
 #[derive(Debug)]
+pub enum ReleaseEnvironment {
+    Development,
+    Production,
+}
+
+impl fmt::Display for ReleaseEnvironment {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{:?}", self)
+    }
+}
+
+impl ReleaseEnvironment {
+    pub fn value(&self) -> String {
+        match *self {
+            ReleaseEnvironment::Development => "development".to_string(),
+            ReleaseEnvironment::Production => "production".to_string(),
+        }
+    }
+}
+
+#[derive(Debug)]
 pub enum LoginType {
     Customer,
     Vendor,
@@ -156,15 +177,7 @@ pub async fn log(level: LogLevel, msg: &str) -> () {
 #[derive(Parser, Default, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {
-    /// check i2p
-   #[arg(
-        short,
-        long,
-        help = "Disable i2p connection check",
-        default_value = "false",
-    )]
-   disable_i2p_check: bool,
-   /// check i2p
+   /// set release environment
    #[arg(
         short,
         long,
@@ -778,14 +791,20 @@ fn get_monero_rpc_host() -> String {
     format!("{}/json_rpc", rpc)
 }
 
+pub fn get_release_env() -> ReleaseEnvironment {
+    let args = Args::parse();
+    let env = args.release_env.to_string();
+    if env == "prod" {
+        return ReleaseEnvironment::Production;
+    } else {
+        return ReleaseEnvironment::Development;
+    }
+}
+
+
 fn get_auth_expiration() -> i64 {
     let args = Args::parse();
     args.token_timeout * 60
-}
-
-pub fn is_i2p_check_enabled() -> bool {
-    let args = Args::parse();
-    !args.disable_i2p_check
 }
 
 pub fn generate_rnd() -> String {

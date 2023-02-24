@@ -20,7 +20,8 @@ i2p marketplace api standards bootstrap
 * install from [Podman](https://registry.hub.docker.com/_/postgres/) official image
 * `podman pull postgres`
 * `podman run --rm -P -p 127.0.0.1:5432:5432 -e POSTGRES_DB=postgres -e POSTGRES_PASSWORD=postgres --name pg postgres:latest`
-* create an environment `.env` file with `DATABASE_URL=postgres://postgres:postgres@127.0.0.1:5432/postgres`
+* set db with the r flag, e.g. `cargo run -- -r <PGDB_URL>`
+*  default is - `postgres://postgres:postgres@127.0.0.1:5432/postgres`
 
 ## Diesel ORM
 
@@ -33,6 +34,12 @@ i2p marketplace api standards bootstrap
 * wallet signing for login (see api.sh) for sample CURL requests
 * multisignature wallets to secure and release funds per order
 * start monero-wallet-rpc e.g `./monero-x86_64-linux-gnu-v0.18.1.2/monero-wallet-rpc --rpc-bind-port 38083 --stagenet --wallet-file Monero/test --disable-rpc-login --prompt-for-password  --daemon-address  http://stagenet.xmr-tw.org:38081`
+
+## Development
+
+* setup dependencies as required
+* `cargo run`
+* hack away
 
 ## API Examples
 
