@@ -5,6 +5,8 @@ use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 
 use crate::logger::{log, LogLevel};
+use crate:: monero;
+use crate::i2p;
 use mpi2p::*;
 
 #[cfg(test)]
@@ -16,7 +18,7 @@ mod tests;
 /// Protected: false
 #[get("/version")]
 async fn get_version() -> Custom<Json<reqres::XmrApiVersionResponse>> {
-    let res: reqres::XmrRpcVersionResponse = get_xmr_version().await;
+    let res: reqres::XmrRpcVersionResponse = monero::get_xmr_version().await;
     let version: i32 = res.result.version;
     Custom(
         Status::Accepted,
@@ -193,7 +195,6 @@ async fn initialize_order(
 }
 
 /// update order
-// oh dear , this will be a bit messy...
 
 /// Get all orders by passing vendor id
 
@@ -206,10 +207,10 @@ async fn rocket() -> _ {
     // pdgb and monero-wallet-rpc are required to be up at boot time
     log(LogLevel::INFO, &("mpi2p is starting up")).await;
     establish_pgdb_connection().await;
-    check_xmr_rpc_connection().await;
+    monero::check_xmr_rpc_connection().await;
     let env = get_release_env().value();
     if env != ReleaseEnvironment::Development.value() {
-        check_i2p_connection().await;
+        i2p::check_i2p_connection().await;
     }
     log(LogLevel::INFO, &(env + " - mpi2p is online")).await;
     rocket::build()

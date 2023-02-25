@@ -1,8 +1,11 @@
 pub mod args;
+pub mod i2p;
 pub mod logger;
 pub mod models;
+pub mod monero;
 pub mod reqres;
 pub mod schema;
+pub mod utils;
 
 use self::models::*;
 use clap::Parser;
@@ -14,24 +17,10 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
 use crate::logger::{log, LogLevel};
-// TODO: refactor modules (customer, vendor, product, order, auth etc.)
+use crate::monero::*;
+use crate::utils::ApplicationErrors;
 
 // START Misc. Enumerations
-#[derive(Debug)]
-pub enum ApplicationErrors {
-    LoginError,
-    UnknownError,
-}
-
-impl ApplicationErrors {
-    pub fn value(&self) -> String {
-        match *self {
-            ApplicationErrors::LoginError => String::from("LoginError"),
-            ApplicationErrors::UnknownError => String::from("UnknownError"),
-        }
-    }
-}
-
 #[derive(Debug)]
 pub enum ReleaseEnvironment {
     Development,
@@ -142,21 +131,6 @@ pub enum OrderUpdateType {
     VendorKex3,
     VendorMultisigInfo,
     Quantity,
-}
-
-#[derive(Debug)]
-pub enum I2pStatus {
-    Accept,
-    Reject,
-}
-
-impl I2pStatus {
-    pub fn value(&self) -> String {
-        match *self {
-            I2pStatus::Accept => String::from("Accepting tunnels"),
-            I2pStatus::Reject => String::from("Rejecting tunnels: Starting up"),
-        }
-    }
 }
 // END Enumerations
 
@@ -608,138 +582,6 @@ pub async fn verify_access(address: &str, signature: &str) -> bool {
 }
 // END PGDB stuff
 
-// XMR RPC stuff
-enum XmrRpcFields {
-    GetVersion,
-    Id,
-    JsonRpcVersion,
-    Verify,
-}
-
-impl XmrRpcFields {
-    pub fn value(&self) -> String {
-        match *self {
-            XmrRpcFields::GetVersion => String::from("get_version"),
-            XmrRpcFields::Id => String::from("0"),
-            XmrRpcFields::JsonRpcVersion => String::from("2.0"),
-            XmrRpcFields::Verify => String::from("verify"),
-        }
-    }
-}
-
-pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
-    let client = reqwest::Client::new();
-    let host = get_monero_rpc_host();
-    let req = reqres::XmrRpcVersionRequest {
-        jsonrpc: XmrRpcFields::JsonRpcVersion.value(),
-        id: XmrRpcFields::Id.value(),
-        method: XmrRpcFields::GetVersion.value(),
-    };
-    match client.post(host).json(&req).send().await {
-        Ok(response) => {
-            let res = response.json::<reqres::XmrRpcVersionResponse>().await;
-            match res {
-                Ok(res) => res,
-                _ => reqres::XmrRpcVersionResponse {
-                    result: reqres::XmrRpcVersionResult { version: 0 },
-                },
-            }
-        }
-        Err(_e) => reqres::XmrRpcVersionResponse {
-            result: reqres::XmrRpcVersionResult { version: 0 },
-        },
-    }
-}
-
-pub async fn check_xmr_rpc_connection() -> () {
-    let res: reqres::XmrRpcVersionResponse = get_xmr_version().await;
-    if res.result.version == 0 {
-        panic!("Failed to connect to monero-wallet-rpc");
-    }
-}
-
-pub async fn verify_signature(address: String, data: String, signature: String) -> String {
-    log(LogLevel::INFO, "Signature verification in progress.").await;
-    let client = reqwest::Client::new();
-    let host = get_monero_rpc_host();
-    let params = reqres::XmrRpcVerifyParams {
-        address,
-        data,
-        signature,
-    };
-    let req = reqres::XmrRpcVerifyRequest {
-        jsonrpc: XmrRpcFields::JsonRpcVersion.value(),
-        id: XmrRpcFields::Id.value(),
-        method: XmrRpcFields::Verify.value(),
-        params,
-    };
-    match client.post(host).json(&req).send().await {
-        Ok(response) => {
-            let res = response.json::<reqres::XmrRpcVerifyResponse>().await;
-            match res {
-                Ok(res) => {
-                    if res.result.good {
-                        req.params.address
-                    } else {
-                        ApplicationErrors::LoginError.value()
-                    }
-                }
-                _ => ApplicationErrors::LoginError.value(),
-            }
-        }
-        Err(_e) => ApplicationErrors::LoginError.value(),
-    }
-}
-
-// START Multisig
-
-// END Multisig
-// END XMR RPC stuff
-
-// START i2p connection verification
-/// TODO: create a tunnel for the server at initial startup
-/// if one does not exist. See https://github.com/i2p-zero/i2p-zero
-pub async fn check_i2p_connection() -> () {
-    let client = reqwest::Client::new();
-    let host = "http://localhost:7657/tunnels";
-    let tick = schedule_recv::periodic_ms(10000);
-    // TODO: better handling and notification of i2p tunnel status
-    //  this check should be running in the background
-    loop {
-        tick.recv().unwrap();
-        match client.get(host).send().await {
-            Ok(response) => {
-                // do some parsing here to check the status
-                let res = response.text().await;
-                match res {
-                    Ok(res) => {
-                        // split the html from the local i2p tunnels page
-                        let split1 = res.split("<h4><span class=\"tunnelBuildStatus\">");
-                        let mut v1: Vec<String> = split1.map(|s| String::from(s)).collect();
-                        let s1 = v1.remove(1);
-                        let v2 = s1.split("</span></h4>");
-                        let mut split2: Vec<String> = v2.map(|s| String::from(s)).collect();
-                        let status: String = split2.remove(0);
-                        if status == I2pStatus::Accept.value() {
-                            log(LogLevel::INFO, "I2P is currently accepting tunnels.").await;
-                            break;
-                        } else if status == I2pStatus::Reject.value() {
-                            log(LogLevel::INFO, "I2P is currently rejecting tunnels.").await;
-                        } else {
-                            log(LogLevel::INFO, "I2P is offline.").await;
-                        }
-                    }
-                    _ => log(LogLevel::ERROR, "I2P status check failure.").await,
-                }
-            }
-            Err(_e) => {
-                log(LogLevel::ERROR, "I2P status check failure.").await;
-            }
-        }
-    }
-}
-// END I2P connection verification
-
 // START misc helpers
 pub async fn get_login_auth(address: String, corv: String, signature: String) -> Authorization {
     if corv == LoginType::Customer.value() {
@@ -747,12 +589,6 @@ pub async fn get_login_auth(address: String, corv: String, signature: String) ->
     } else {
         verify_vendor_login(address, signature).await
     }
-}
-
-fn get_monero_rpc_host() -> String {
-    let args = args::Args::parse();
-    let rpc = String::from(args.monero_rpc_host);
-    format!("{}/json_rpc", rpc)
 }
 
 pub fn get_release_env() -> ReleaseEnvironment {
@@ -776,102 +612,3 @@ pub fn generate_rnd() -> String {
     hex::encode(data)
 }
 // END misc. helpers
-
-// START response builders
-impl reqres::GetCustomerResponse {
-    pub fn build(m_customer: models::Customer) -> Self {
-        reqres::GetCustomerResponse {
-            cid: m_customer.cid,
-            address: m_customer.c_xmr_address,
-            name: m_customer.c_name,
-            pgp: m_customer.c_pgp,
-        }
-    }
-}
-
-impl reqres::GetVendorResponse {
-    pub fn build(m_vendor: models::Vendor) -> Self {
-        reqres::GetVendorResponse {
-            vid: m_vendor.vid,
-            active: m_vendor.active,
-            address: m_vendor.v_xmr_address,
-            description: m_vendor.v_description,
-            name: m_vendor.v_name,
-            pgp: m_vendor.v_pgp,
-        }
-    }
-}
-
-impl reqres::GetAuthResponse {
-    pub fn build(m_auth: models::Authorization) -> Self {
-        reqres::GetAuthResponse {
-            address: m_auth.xmr_address,
-            aid: m_auth.aid,
-            data: m_auth.rnd,
-            created: m_auth.created,
-        }
-    }
-}
-
-impl reqres::GetProductResponse {
-    pub fn build(m_product: models::Product) -> Self {
-        reqres::GetProductResponse {
-            pid: m_product.pid,
-            v_id: m_product.v_id,
-            in_stock: m_product.in_stock,
-            description: m_product.p_description,
-            name: m_product.p_name,
-            price: m_product.p_price,
-            qty: m_product.qty,
-        }
-    }
-}
-
-impl reqres::GetVendorProductsResponse {
-    pub fn build(m_products: Vec<models::Product>) -> Self {
-        let mut v_res: Vec<reqres::GetProductResponse> = Vec::new();
-        for m in m_products {
-            let p_res: reqres::GetProductResponse = reqres::GetProductResponse {
-                pid: m.pid,
-                v_id: m.v_id,
-                in_stock: m.in_stock,
-                description: m.p_description,
-                name: m.p_name,
-                price: m.p_price,
-                qty: m.qty,
-            };
-            v_res.push(p_res);
-        }
-        reqres::GetVendorProductsResponse { products: v_res }
-    }
-}
-
-impl reqres::InitializeOrderResponse {
-    pub fn build(pid: String, m_order: models::Order) -> Self {
-        reqres::InitializeOrderResponse {
-            orid: m_order.orid,
-            cid: m_order.c_id,
-            pid,
-            xmr_address: m_order.o_xmr_address,
-            cust_msig_info: m_order.o_cust_msig_info,
-            cust_kex_1: m_order.o_cust_kex_1,
-            cust_kex_2: m_order.o_cust_kex_2,
-            cust_kex_3: m_order.o_cust_kex_3,
-            date: m_order.o_date,
-            deliver_date: m_order.o_deliver_date,
-            ship_date: m_order.o_ship_date,
-            hash: m_order.o_hash,
-            msig_prepare: m_order.o_msig_prepare,
-            msig_make: m_order.o_msig_make,
-            msig_kex_1: m_order.o_msig_kex_1,
-            msig_kex_2: m_order.o_msig_kex_2,
-            msig_kex_3: m_order.o_msig_kex_3,
-            status: m_order.o_status,
-            quantity: m_order.o_quantity,
-            vend_kex_1: m_order.o_vend_kex_1,
-            vend_kex_2: m_order.o_vend_kex_2,
-            vend_kex_3: m_order.o_vend_kex_3,
-        }
-    }
-}
-// END response builders

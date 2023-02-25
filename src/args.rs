@@ -1,6 +1,6 @@
 use clap::Parser;
 
-// cmd line args
+/// cmd line args
 #[derive(Parser, Default, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct Args {

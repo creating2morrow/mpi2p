@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-
+use crate::models;
 // All http requests and responses are here
 
 #[derive(Deserialize, Debug)]
@@ -209,3 +209,102 @@ impl Default for InitializeOrderResponse {
         }
     }
 }
+
+// START response builders
+impl GetCustomerResponse {
+    pub fn build(m_customer: models::Customer) -> Self {
+        GetCustomerResponse {
+            cid: m_customer.cid,
+            address: m_customer.c_xmr_address,
+            name: m_customer.c_name,
+            pgp: m_customer.c_pgp,
+        }
+    }
+}
+
+impl GetVendorResponse {
+    pub fn build(m_vendor: models::Vendor) -> Self {
+        GetVendorResponse {
+            vid: m_vendor.vid,
+            active: m_vendor.active,
+            address: m_vendor.v_xmr_address,
+            description: m_vendor.v_description,
+            name: m_vendor.v_name,
+            pgp: m_vendor.v_pgp,
+        }
+    }
+}
+
+impl GetAuthResponse {
+    pub fn build(m_auth: models::Authorization) -> Self {
+        GetAuthResponse {
+            address: m_auth.xmr_address,
+            aid: m_auth.aid,
+            data: m_auth.rnd,
+            created: m_auth.created,
+        }
+    }
+}
+
+impl GetProductResponse {
+    pub fn build(m_product: models::Product) -> Self {
+        GetProductResponse {
+            pid: m_product.pid,
+            v_id: m_product.v_id,
+            in_stock: m_product.in_stock,
+            description: m_product.p_description,
+            name: m_product.p_name,
+            price: m_product.p_price,
+            qty: m_product.qty,
+        }
+    }
+}
+
+impl GetVendorProductsResponse {
+    pub fn build(m_products: Vec<models::Product>) -> Self {
+        let mut v_res: Vec<GetProductResponse> = Vec::new();
+        for m in m_products {
+            let p_res: GetProductResponse = GetProductResponse {
+                pid: m.pid,
+                v_id: m.v_id,
+                in_stock: m.in_stock,
+                description: m.p_description,
+                name: m.p_name,
+                price: m.p_price,
+                qty: m.qty,
+            };
+            v_res.push(p_res);
+        }
+        GetVendorProductsResponse { products: v_res }
+    }
+}
+
+impl InitializeOrderResponse {
+    pub fn build(pid: String, m_order: models::Order) -> Self {
+        InitializeOrderResponse {
+            orid: m_order.orid,
+            cid: m_order.c_id,
+            pid,
+            xmr_address: m_order.o_xmr_address,
+            cust_msig_info: m_order.o_cust_msig_info,
+            cust_kex_1: m_order.o_cust_kex_1,
+            cust_kex_2: m_order.o_cust_kex_2,
+            cust_kex_3: m_order.o_cust_kex_3,
+            date: m_order.o_date,
+            deliver_date: m_order.o_deliver_date,
+            ship_date: m_order.o_ship_date,
+            hash: m_order.o_hash,
+            msig_prepare: m_order.o_msig_prepare,
+            msig_make: m_order.o_msig_make,
+            msig_kex_1: m_order.o_msig_kex_1,
+            msig_kex_2: m_order.o_msig_kex_2,
+            msig_kex_3: m_order.o_msig_kex_3,
+            status: m_order.o_status,
+            quantity: m_order.o_quantity,
+            vend_kex_1: m_order.o_vend_kex_1,
+            vend_kex_2: m_order.o_vend_kex_2,
+            vend_kex_3: m_order.o_vend_kex_3,
+        }
+    }
+}
+// END response builders
