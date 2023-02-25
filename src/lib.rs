@@ -1,17 +1,19 @@
+pub mod args;
+pub mod logger;
 pub mod models;
-pub mod schema;
 pub mod reqres;
+pub mod schema;
 
-use hex;
-use chrono;
 use self::models::*;
-use clap:: Parser;
+use clap::Parser;
+use hex;
 use rand_core::RngCore;
-use std::fmt::{Debug};
+use std::fmt::Debug;
 
-use diesel::prelude::*;
 use diesel::pg::PgConnection;
+use diesel::prelude::*;
 
+use crate::logger::{log, LogLevel};
 // TODO: refactor modules (customer, vendor, product, order, auth etc.)
 
 // START Misc. Enumerations
@@ -158,99 +160,28 @@ impl I2pStatus {
 }
 // END Enumerations
 
-// START logger
-#[derive(Debug, Clone)]
-pub enum LogLevel {
-    DEBUG,
-    ERROR,
-    INFO,
-    WARN,
-}
-
-impl LogLevel {
-    pub fn value(&self) -> String {
-        match *self {
-            LogLevel::DEBUG => String::from("DEBUG"),
-            LogLevel::ERROR => String::from("ERROR"),
-            LogLevel::INFO => String::from("INFO"),
-            LogLevel::WARN => String::from("DEBUG"),
-        }
-    }
-}
-
-pub async fn log(level: LogLevel, msg: &str) -> () {
-    let args = Args::parse();
-    let set_level = args.log_level.split(",");
-    let vec: Vec<String> = set_level.map(|s| String::from(s)).collect();
-    if vec.contains(&level.value()) {
-        println!(
-            "{}", format!("|{:?}\t|\t|{:?}| => {}", level, chrono::offset::Utc::now(), msg)
-        );
-    }
-}
-// END logger stuff
-
-// cmd line args
-#[derive(Parser, Default, Debug)]
-#[command(author, version, about, long_about = None)]
-pub struct Args {
-   /// set release environment
-   #[arg(
-        short,
-        long,
-        help = "Set release environment (dev, prod)",
-        default_value = "dev",
-    )]
-   release_env: String,
-    /// Log Level
-   #[arg(
-        short,
-        long,
-        help = "Comma separated log level e.g. <WARN,INFO...>",
-        default_value = "ERROR,INFO",
-    )]
-   log_level: String,
-   /// Monero RPC HOST
-   #[arg(
-        short,
-        long,
-        help = "Monero RPC host.",
-        default_value = "http://localhost:38083",
-   )]
-   monero_rpc_host: String,
-   /// Monero RPC HOST
-   #[arg(
-        short,
-        long,
-        help = "Postgres db url",
-        default_value = "postgres://postgres:postgres@127.0.0.1:5432/postgres",
-   )]
-   postgres_db_url: String,
-   /// Token expiration in minutes
-   #[arg(
-        short,
-        long,
-        help = "Set the token expiration limit in minutes.",
-        default_value = "60",
-   )]
-   token_timeout: i64,
-}
-// END cmd line args
-
 // START PGDB stuff
 pub async fn establish_pgdb_connection() -> PgConnection {
-    let args = Args::parse();
+    let args = args::Args::parse();
     let db_string: String = String::from(args.postgres_db_url);
     PgConnection::establish(&db_string)
         .unwrap_or_else(|_| panic!("Error connecting to {}", db_string))
 }
 
-async fn create_customer
-(conn: &mut PgConnection, c_xmr_address: &str, c_name: &str, c_pgp: &str) ->
-Customer {
+async fn create_customer(
+    conn: &mut PgConnection,
+    c_xmr_address: &str,
+    c_name: &str,
+    c_pgp: &str,
+) -> Customer {
     use crate::schema::customers;
     let cid: String = generate_rnd();
-    let new_customer = NewCustomer { cid: &cid, c_xmr_address, c_name, c_pgp };
+    let new_customer = NewCustomer {
+        cid: &cid,
+        c_xmr_address,
+        c_name,
+        c_pgp,
+    };
     diesel::insert_into(customers::table)
         .values(&new_customer)
         .get_result(conn)
@@ -266,23 +197,36 @@ pub async fn find_customer(address: String) -> Customer {
     match results {
         Ok(mut r) => {
             log(LogLevel::INFO, "Found customer.").await;
-            if &r.len() > &0 { r.remove(0) }
-            else { Default::default() }
-        },
-        _=> {
-                log(LogLevel::ERROR, "Error finding customer.").await;
+            if &r.len() > &0 {
+                r.remove(0)
+            } else {
                 Default::default()
             }
+        }
+        _ => {
+            log(LogLevel::ERROR, "Error finding customer.").await;
+            Default::default()
+        }
     }
 }
 
-async fn create_vendor
-(conn: &mut PgConnection, v_xmr_address: &str,
-v_name: &str, v_pgp: &str,v_description: &str, active: &bool) -> Vendor {
+async fn create_vendor(
+    conn: &mut PgConnection,
+    v_xmr_address: &str,
+    v_name: &str,
+    v_pgp: &str,
+    v_description: &str,
+    active: &bool,
+) -> Vendor {
     use crate::schema::vendors;
     let vid: String = generate_rnd();
     let new_vendor = NewVendor {
-        vid: &vid, v_xmr_address, v_name, v_description, v_pgp, active 
+        vid: &vid,
+        v_xmr_address,
+        v_name,
+        v_description,
+        v_pgp,
+        active,
     };
     diesel::insert_into(vendors::table)
         .values(&new_vendor)
@@ -298,16 +242,17 @@ pub async fn find_vendor(address: String) -> Vendor {
         .load::<models::Vendor>(connection);
     match results {
         Ok(mut r) => {
-            if &r.len() > &0 { 
+            if &r.len() > &0 {
                 log(LogLevel::INFO, "Found vendor.").await;
-                r.remove(0) 
-            }
-            else { Default::default() }
-        },
-        _=> {
-                log(LogLevel::ERROR, "Error finding vendor.").await;
+                r.remove(0)
+            } else {
                 Default::default()
             }
+        }
+        _ => {
+            log(LogLevel::ERROR, "Error finding vendor.").await;
+            Default::default()
+        }
     }
 }
 
@@ -375,17 +320,16 @@ pub async fn find_vendor_products(_v_id: String) -> Vec<Product> {
         Ok(r) => {
             log(LogLevel::INFO, "Found vendor products.").await;
             r
-        },
-        _=> {
-                log(LogLevel::ERROR, "Error finding vendor products.").await;
-                let v: Vec<Product> = Vec::new();
-                v
-            }
+        }
+        _ => {
+            log(LogLevel::ERROR, "Error finding vendor products.").await;
+            let v: Vec<Product> = Vec::new();
+            v
+        }
     }
 }
 
-pub async fn verify_customer_login(address: String, signature: String) ->
-Authorization {
+pub async fn verify_customer_login(address: String, signature: String) -> Authorization {
     use self::schema::customers::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     let f_address = String::from(&address);
@@ -411,15 +355,14 @@ Authorization {
                 return f_auth;
             }
         }
-        _=> {
+        _ => {
             log(LogLevel::ERROR, "Error creating customer.").await;
             Default::default()
         }
     }
 }
 
-pub async fn verify_vendor_login(address: String, signature: String) ->
-Authorization {
+pub async fn verify_vendor_login(address: String, signature: String) -> Authorization {
     use self::schema::vendors::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     let f_address = String::from(&address);
@@ -445,15 +388,14 @@ Authorization {
                 return f_auth;
             }
         }
-        _=> {
+        _ => {
             log(LogLevel::ERROR, "Error creating vendor.").await;
             Default::default()
         }
     }
 }
 
-pub async fn modify_customer(_id: String, data: String, update_type: i32) ->
-Customer {
+pub async fn modify_customer(_id: String, data: String, update_type: i32) -> Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     if update_type == VendorUpdateType::Name.value() {
@@ -463,24 +405,22 @@ Customer {
             .get_result::<Customer>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => Default::default()
+            Err(_e) => Default::default(),
         };
-    }
-    else if update_type == VendorUpdateType::Pgp.value() {
+    } else if update_type == VendorUpdateType::Pgp.value() {
         log(LogLevel::INFO, "Modify customer PGP.").await;
         let m = diesel::update(customers.find(_id))
             .set(c_pgp.eq(data))
             .get_result::<Customer>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => Default::default()
+            Err(_e) => Default::default(),
         };
     }
     Default::default()
 }
 
-pub async fn modify_vendor(_id: String, data: String, update_type: i32) ->
-Vendor {
+pub async fn modify_vendor(_id: String, data: String, update_type: i32) -> Vendor {
     use self::schema::vendors::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     if update_type == VendorUpdateType::Active.value() {
@@ -490,44 +430,40 @@ Vendor {
             .get_result::<Vendor>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => Default::default()
+            Err(_e) => Default::default(),
         };
-    }
-    else if update_type == VendorUpdateType::Description.value() {
+    } else if update_type == VendorUpdateType::Description.value() {
         log(LogLevel::INFO, "Modify vendor description.").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_description.eq(data))
             .get_result::<Vendor>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => Default::default()
+            Err(_e) => Default::default(),
         };
-    }
-    else if update_type == VendorUpdateType::Name.value() {
+    } else if update_type == VendorUpdateType::Name.value() {
         log(LogLevel::INFO, "Modify vendor name.").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_name.eq(data))
             .get_result::<Vendor>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => Default::default()
+            Err(_e) => Default::default(),
         };
-    }
-    else if update_type == VendorUpdateType::Pgp.value() {
+    } else if update_type == VendorUpdateType::Pgp.value() {
         log(LogLevel::INFO, "Modify vendor pgp.").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_pgp.eq(data))
             .get_result::<Vendor>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => Default::default()
+            Err(_e) => Default::default(),
         };
     }
     Default::default()
 }
 
-pub async fn modify_product(_id: String, data: String, update_type: i32) ->
-Product {
+pub async fn modify_product(_id: String, data: String, update_type: i32) -> Product {
     use self::schema::products::dsl::*;
     let connection = &mut establish_pgdb_connection().await;
     // TODO: this isn't right. The product should automatically
@@ -540,30 +476,27 @@ Product {
             .get_result::<Product>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => Default::default()
+            Err(_e) => Default::default(),
         };
-    }
-    else if update_type == ProductUpdateType::Description.value() {
+    } else if update_type == ProductUpdateType::Description.value() {
         log(LogLevel::INFO, "Modify product description.").await;
         let m = diesel::update(products.find(_id))
             .set(p_description.eq(data))
             .get_result::<Product>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => Default::default()
+            Err(_e) => Default::default(),
         };
-    }
-    else if update_type == ProductUpdateType::Name.value() {
+    } else if update_type == ProductUpdateType::Name.value() {
         log(LogLevel::INFO, "Modify product name.").await;
         let m = diesel::update(products.find(_id))
             .set(p_name.eq(data))
             .get_result::<Product>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => Default::default()
+            Err(_e) => Default::default(),
         };
-    }
-    else if update_type == ProductUpdateType::Price.value() {
+    } else if update_type == ProductUpdateType::Price.value() {
         log(LogLevel::INFO, "Modify product price.").await;
         let price_data = match data.parse::<i64>() {
             Ok(n) => n,
@@ -574,19 +507,23 @@ Product {
             .get_result::<Product>(connection);
         match m {
             Ok(m) => m,
-            Err(_e) => Default::default()
+            Err(_e) => Default::default(),
         };
     }
     Default::default()
 }
 
-pub async fn create_auth(conn: &mut PgConnection, address:String) ->
-Authorization {
+pub async fn create_auth(conn: &mut PgConnection, address: String) -> Authorization {
     use crate::schema::authorizations;
     let aid: String = generate_rnd();
     let rnd: String = generate_rnd();
     let created: i64 = chrono::offset::Utc::now().timestamp();
-    let new_auth = NewAuthorization { aid: &aid, created: &created, rnd: &rnd, xmr_address: &address };
+    let new_auth = NewAuthorization {
+        aid: &aid,
+        created: &created,
+        rnd: &rnd,
+        xmr_address: &address,
+    };
     diesel::insert_into(authorizations::table)
         .values(&new_auth)
         .get_result(conn)
@@ -604,11 +541,13 @@ async fn find_auth(address: String) -> Authorization {
             if &r.len() > &0 {
                 log(LogLevel::INFO, "Found auth.").await;
                 r.remove(0)
-            } else { Default::default() }
-        },
-        _=> {
-                log(LogLevel::ERROR, "Error finding auth.").await;
+            } else {
                 Default::default()
+            }
+        }
+        _ => {
+            log(LogLevel::ERROR, "Error finding auth.").await;
+            Default::default()
         }
     }
 }
@@ -623,7 +562,7 @@ async fn update_auth_expiration(_id: &str) -> Authorization {
         .get_result::<Authorization>(connection);
     match m {
         Ok(m) => m,
-        Err(_e) => Default::default()
+        Err(_e) => Default::default(),
     }
 }
 
@@ -637,7 +576,7 @@ async fn update_auth_data(_id: &str) -> Authorization {
         .get_result::<Authorization>(connection);
     match m {
         Ok(m) => m,
-        Err(_e) => Default::default()
+        Err(_e) => Default::default(),
     }
 }
 
@@ -660,9 +599,8 @@ pub async fn verify_access(address: &str, signature: &str) -> bool {
     }
     // verify signature on the data if not expired
     let data = f_auth.rnd;
-    let sig_address: String = verify_signature(
-        String::from(address), data, String::from(signature)
-    ).await;
+    let sig_address: String =
+        verify_signature(String::from(address), data, String::from(signature)).await;
     if sig_address == ApplicationErrors::LoginError.value() {
         return false;
     }
@@ -692,27 +630,24 @@ impl XmrRpcFields {
 pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
     let client = reqwest::Client::new();
     let host = get_monero_rpc_host();
-    let req = reqres::XmrRpcVersionRequest { 
-        jsonrpc: XmrRpcFields::JsonRpcVersion.value(), 
-        id: XmrRpcFields::Id.value(), 
+    let req = reqres::XmrRpcVersionRequest {
+        jsonrpc: XmrRpcFields::JsonRpcVersion.value(),
+        id: XmrRpcFields::Id.value(),
         method: XmrRpcFields::GetVersion.value(),
     };
-    match client.post(host).json(&req).send().await
-    {
+    match client.post(host).json(&req).send().await {
         Ok(response) => {
             let res = response.json::<reqres::XmrRpcVersionResponse>().await;
             match res {
                 Ok(res) => res,
-                _=> reqres::XmrRpcVersionResponse { 
-                    result: reqres::XmrRpcVersionResult { version: 0 } 
-                }
+                _ => reqres::XmrRpcVersionResponse {
+                    result: reqres::XmrRpcVersionResult { version: 0 },
+                },
             }
         }
-        Err(_e) => {
-            reqres::XmrRpcVersionResponse { 
-                result: reqres::XmrRpcVersionResult { version: 0 } 
-            }
-        }
+        Err(_e) => reqres::XmrRpcVersionResponse {
+            result: reqres::XmrRpcVersionResult { version: 0 },
+        },
     }
 }
 
@@ -723,9 +658,7 @@ pub async fn check_xmr_rpc_connection() -> () {
     }
 }
 
-pub async fn verify_signature(
-    address: String, data: String, signature: String
-) -> String {
+pub async fn verify_signature(address: String, data: String, signature: String) -> String {
     log(LogLevel::INFO, "Signature verification in progress.").await;
     let client = reqwest::Client::new();
     let host = get_monero_rpc_host();
@@ -734,14 +667,13 @@ pub async fn verify_signature(
         data,
         signature,
     };
-    let req = reqres::XmrRpcVerifyRequest { 
-        jsonrpc: XmrRpcFields::JsonRpcVersion.value(), 
-        id: XmrRpcFields::Id.value(), 
+    let req = reqres::XmrRpcVerifyRequest {
+        jsonrpc: XmrRpcFields::JsonRpcVersion.value(),
+        id: XmrRpcFields::Id.value(),
         method: XmrRpcFields::Verify.value(),
         params,
     };
-    match client.post(host).json(&req).send().await
-    {
+    match client.post(host).json(&req).send().await {
         Ok(response) => {
             let res = response.json::<reqres::XmrRpcVerifyResponse>().await;
             match res {
@@ -752,12 +684,10 @@ pub async fn verify_signature(
                         ApplicationErrors::LoginError.value()
                     }
                 }
-                _=> ApplicationErrors::LoginError.value()
+                _ => ApplicationErrors::LoginError.value(),
             }
         }
-        Err(_e) => {
-            ApplicationErrors::LoginError.value()
-        }
+        Err(_e) => ApplicationErrors::LoginError.value(),
     }
 }
 
@@ -777,8 +707,7 @@ pub async fn check_i2p_connection() -> () {
     //  this check should be running in the background
     loop {
         tick.recv().unwrap();
-        match client.get(host).send().await
-        {
+        match client.get(host).send().await {
             Ok(response) => {
                 // do some parsing here to check the status
                 let res = response.text().await;
@@ -799,8 +728,8 @@ pub async fn check_i2p_connection() -> () {
                         } else {
                             log(LogLevel::INFO, "I2P is offline.").await;
                         }
-                    },
-                    _=> log(LogLevel::ERROR, "I2P status check failure.").await
+                    }
+                    _ => log(LogLevel::ERROR, "I2P status check failure.").await,
                 }
             }
             Err(_e) => {
@@ -812,8 +741,7 @@ pub async fn check_i2p_connection() -> () {
 // END I2P connection verification
 
 // START misc helpers
-pub async fn get_login_auth
-(address: String, corv: String, signature: String) -> Authorization {
+pub async fn get_login_auth(address: String, corv: String, signature: String) -> Authorization {
     if corv == LoginType::Customer.value() {
         verify_customer_login(address, signature).await
     } else {
@@ -822,13 +750,13 @@ pub async fn get_login_auth
 }
 
 fn get_monero_rpc_host() -> String {
-    let args = Args::parse();
+    let args = args::Args::parse();
     let rpc = String::from(args.monero_rpc_host);
     format!("{}/json_rpc", rpc)
 }
 
 pub fn get_release_env() -> ReleaseEnvironment {
-    let args = Args::parse();
+    let args = args::Args::parse();
     let env = String::from(args.release_env);
     if env == "prod" {
         return ReleaseEnvironment::Production;
@@ -838,7 +766,7 @@ pub fn get_release_env() -> ReleaseEnvironment {
 }
 
 fn get_auth_expiration() -> i64 {
-    let args = Args::parse();
+    let args = args::Args::parse();
     args.token_timeout * 60
 }
 
@@ -853,8 +781,10 @@ pub fn generate_rnd() -> String {
 impl reqres::GetCustomerResponse {
     pub fn build(m_customer: models::Customer) -> Self {
         reqres::GetCustomerResponse {
-            cid: m_customer.cid, address: m_customer.c_xmr_address,
-            name: m_customer.c_name, pgp: m_customer.c_pgp,
+            cid: m_customer.cid,
+            address: m_customer.c_xmr_address,
+            name: m_customer.c_name,
+            pgp: m_customer.c_pgp,
         }
     }
 }
@@ -862,8 +792,12 @@ impl reqres::GetCustomerResponse {
 impl reqres::GetVendorResponse {
     pub fn build(m_vendor: models::Vendor) -> Self {
         reqres::GetVendorResponse {
-            vid: m_vendor.vid, active: m_vendor.active, address: m_vendor.v_xmr_address,
-            description: m_vendor.v_description,name: m_vendor.v_name,pgp: m_vendor.v_pgp,
+            vid: m_vendor.vid,
+            active: m_vendor.active,
+            address: m_vendor.v_xmr_address,
+            description: m_vendor.v_description,
+            name: m_vendor.v_name,
+            pgp: m_vendor.v_pgp,
         }
     }
 }
@@ -871,8 +805,10 @@ impl reqres::GetVendorResponse {
 impl reqres::GetAuthResponse {
     pub fn build(m_auth: models::Authorization) -> Self {
         reqres::GetAuthResponse {
-            address: m_auth.xmr_address, aid: m_auth.aid,
-            data: m_auth.rnd, created: m_auth.created,
+            address: m_auth.xmr_address,
+            aid: m_auth.aid,
+            data: m_auth.rnd,
+            created: m_auth.created,
         }
     }
 }
@@ -880,9 +816,13 @@ impl reqres::GetAuthResponse {
 impl reqres::GetProductResponse {
     pub fn build(m_product: models::Product) -> Self {
         reqres::GetProductResponse {
-            pid: m_product.pid, v_id: m_product.v_id, in_stock: m_product.in_stock,
-            description: m_product.p_description, name: m_product.p_name,
-            price: m_product.p_price, qty: m_product.qty,
+            pid: m_product.pid,
+            v_id: m_product.v_id,
+            in_stock: m_product.in_stock,
+            description: m_product.p_description,
+            name: m_product.p_name,
+            price: m_product.p_price,
+            qty: m_product.qty,
         }
     }
 }
@@ -892,9 +832,13 @@ impl reqres::GetVendorProductsResponse {
         let mut v_res: Vec<reqres::GetProductResponse> = Vec::new();
         for m in m_products {
             let p_res: reqres::GetProductResponse = reqres::GetProductResponse {
-                pid: m.pid, v_id: m.v_id, in_stock: m.in_stock,
-                description: m.p_description, name: m.p_name,
-                price: m.p_price, qty: m.qty,
+                pid: m.pid,
+                v_id: m.v_id,
+                in_stock: m.in_stock,
+                description: m.p_description,
+                name: m.p_name,
+                price: m.p_price,
+                qty: m.qty,
             };
             v_res.push(p_res);
         }
@@ -905,16 +849,28 @@ impl reqres::GetVendorProductsResponse {
 impl reqres::InitializeOrderResponse {
     pub fn build(pid: String, m_order: models::Order) -> Self {
         reqres::InitializeOrderResponse {
-            orid: m_order.orid, cid: m_order.c_id, pid, xmr_address: m_order.o_xmr_address,
-            cust_msig_info: m_order.o_cust_msig_info, cust_kex_1: m_order.o_cust_kex_1,
-            cust_kex_2: m_order.o_cust_kex_2, cust_kex_3: m_order.o_cust_kex_3, 
-            date: m_order.o_date, deliver_date: m_order.o_deliver_date,
-            ship_date: m_order.o_ship_date, hash: m_order.o_hash, 
-            msig_prepare: m_order.o_msig_prepare, msig_make: m_order.o_msig_make,
-            msig_kex_1: m_order.o_msig_kex_1, msig_kex_2: m_order.o_msig_kex_2,
-            msig_kex_3: m_order.o_msig_kex_3, status: m_order.o_status,
-            quantity: m_order.o_quantity, vend_kex_1: m_order.o_vend_kex_1,
-            vend_kex_2: m_order.o_vend_kex_2, vend_kex_3: m_order.o_vend_kex_3,
+            orid: m_order.orid,
+            cid: m_order.c_id,
+            pid,
+            xmr_address: m_order.o_xmr_address,
+            cust_msig_info: m_order.o_cust_msig_info,
+            cust_kex_1: m_order.o_cust_kex_1,
+            cust_kex_2: m_order.o_cust_kex_2,
+            cust_kex_3: m_order.o_cust_kex_3,
+            date: m_order.o_date,
+            deliver_date: m_order.o_deliver_date,
+            ship_date: m_order.o_ship_date,
+            hash: m_order.o_hash,
+            msig_prepare: m_order.o_msig_prepare,
+            msig_make: m_order.o_msig_make,
+            msig_kex_1: m_order.o_msig_kex_1,
+            msig_kex_2: m_order.o_msig_kex_2,
+            msig_kex_3: m_order.o_msig_kex_3,
+            status: m_order.o_status,
+            quantity: m_order.o_quantity,
+            vend_kex_1: m_order.o_vend_kex_1,
+            vend_kex_2: m_order.o_vend_kex_2,
+            vend_kex_3: m_order.o_vend_kex_3,
         }
     }
 }

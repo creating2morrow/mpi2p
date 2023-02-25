@@ -129,7 +129,7 @@ pub struct GetVendorProductsResponse {
 impl Default for GetVendorProductsResponse {
     fn default() -> Self {
         GetVendorProductsResponse {
-            products: Vec::new()
+            products: Vec::new(),
         }
     }
 }
