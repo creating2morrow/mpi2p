@@ -3,6 +3,7 @@ use rocket::serde::json::{Json};
 use rocket::response::status::Custom;
 use rocket::http::Status;
 
+// if it isn't in lib.rs dont try and call it from main.rs.
 use mpi2p::*;
 
 #[cfg(test)] mod tests;
@@ -145,6 +146,7 @@ async fn initialize_order
 #[launch]
 async fn rocket() -> _ {
     // pdgb and monero-wallet-rpc are required to be up at boot time
+    log(LogLevel::INFO, &("mpi2p is starting up")).await;
     establish_pgdb_connection().await;
     check_xmr_rpc_connection().await;
     let env = get_release_env().value();

@@ -1,5 +1,14 @@
 use diesel::prelude::*;
 
+/*
+  Making changes here involves 4 possible locations:
+    1: migrations/<model_dir>/UP.sql
+    2: models.rs Queryable and Insertable structs
+    3: reqres.rs request, response structs
+    4: lib.rs response::build()
+  reqres.rs structs when updating models.
+*/
+
 #[derive(Queryable, Debug)]
 pub struct Customer {
     pub cid: String,

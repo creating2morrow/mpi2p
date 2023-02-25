@@ -167,7 +167,7 @@ pub async fn log(level: LogLevel, msg: &str) -> () {
     let vec: Vec<String> = set_level.map(|s| s.to_string()).collect();
     if vec.contains(&level.to_string()) {
         println!(
-            "{}", format!("|{:?}|\t|{:?}| => {}", level, chrono::offset::Utc::now(), msg)
+            "{}", format!("|{:?}\t|\t|{:?}| => {}", level, chrono::offset::Utc::now(), msg)
         );
     }
 }
@@ -739,6 +739,7 @@ pub async fn check_i2p_connection() -> () {
     let host = "http://localhost:7657/tunnels";
     let tick = schedule_recv::periodic_ms(10000);
     // TODO: better handling and notification of i2p tunnel status
+    //  this check should be running in the background
     loop {
         tick.recv().unwrap();
         match client.get(host).send().await
@@ -800,7 +801,6 @@ pub fn get_release_env() -> ReleaseEnvironment {
         return ReleaseEnvironment::Development;
     }
 }
-
 
 fn get_auth_expiration() -> i64 {
     let args = Args::parse();

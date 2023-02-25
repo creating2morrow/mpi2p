@@ -2,13 +2,14 @@
 
 i2p marketplace api standards bootstrap
 
-* This is project is for research and development use
+* This is project is primarily for research and development use
 * Contributors welcome!
 
 ## I2P (invisble internet)
 
 * download from [geti2p.org](https://geti2p.org/en/)
 * setup tunnel at http://127.0.0.1:7657/i2ptunnelmgr
+* {in-progress} - automated tunnel start/stop
 
 ## Rocket 
 
@@ -43,7 +44,7 @@ i2p marketplace api standards bootstrap
 
 ## API Examples
 
-* see `api.sh`
+* see [api.md](./api.md)
 * {in progress}: swagger open api
 
 ### Authorization
@@ -68,12 +69,12 @@ is screened accordingly. The login API is used to get the random data.
 ### Authorization
 
 * protected APIs currently require address/signature path parameters
-* <i>Future use</i>: set `Authorization: <ADDRESS>:<SIGNATURE>` on subsequent requests
+* <i>Future use</i>: set `Authorization: Bearer <JWT(claim:ADDRESS:SIGNATURE)>` on subsequent requests
 * address must match the one on file during login
 * if auth expiration then new data must be signed (default : 60 minutes)
 * call the login API again to refresh and sign new data
 * the login API will create customer or vendor if they dont exist
-* to check for existence use auth header and xmr address in the /customer|vendor/<ADDRESS> API
+* to check for existence use the /customer|vendor/<ADDRESS> API
 
 ## High Level Order Lifecycle
 
@@ -86,6 +87,7 @@ is screened accordingly. The login API is used to get the random data.
 * customer recieves product and signs multisig transaction
 * vendors signs and submits multisig transaction
 * disputes handled on case-by-case basis, app can sign disputes only
+* {in-progress} - detailed flow
 
 ## Status
 

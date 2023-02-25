@@ -1,5 +1,6 @@
 # API docs
 
+```bash
 # [GET] get the current monero-wallet-rpc version
 curl http://127.0.0.1:8000/xmr/version
 
