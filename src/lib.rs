@@ -7,22 +7,26 @@ use chrono;
 use self::models::*;
 use clap:: Parser;
 use rand_core::RngCore;
-use std::fmt::{self, Debug};
+use std::fmt::{Debug};
 
 use diesel::prelude::*;
 use diesel::pg::PgConnection;
 
-// TODO: start refactoring this if it grows larger than 10000 lines
+// TODO: refactor modules (customer, vendor, product, order, auth etc.)
 
 // START Misc. Enumerations
 #[derive(Debug)]
 pub enum ApplicationErrors {
     LoginError,
+    UnknownError,
 }
 
-impl fmt::Display for ApplicationErrors {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+impl ApplicationErrors {
+    pub fn value(&self) -> String {
+        match *self {
+            ApplicationErrors::LoginError => String::from("LoginError"),
+            ApplicationErrors::UnknownError => String::from("UnknownError"),
+        }
     }
 }
 
@@ -32,17 +36,11 @@ pub enum ReleaseEnvironment {
     Production,
 }
 
-impl fmt::Display for ReleaseEnvironment {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
-    }
-}
-
 impl ReleaseEnvironment {
     pub fn value(&self) -> String {
         match *self {
-            ReleaseEnvironment::Development => "development".to_string(),
-            ReleaseEnvironment::Production => "production".to_string(),
+            ReleaseEnvironment::Development => String::from("development"),
+            ReleaseEnvironment::Production => String::from("production"),
         }
     }
 }
@@ -56,8 +54,8 @@ pub enum LoginType {
 impl LoginType {
     pub fn value(&self) -> String {
         match *self {
-            LoginType::Customer => "customer".to_string(),
-            LoginType::Vendor => "vendor".to_string(),
+            LoginType::Customer => String::from("customer"),
+            LoginType::Vendor => String::from("vendor"),
         }
     }
 }
@@ -101,7 +99,7 @@ impl ProductUpdateType {
 }
 
 #[derive(Debug)]
-pub enum OrderStatus {
+pub enum OrderStatusType {
     Delivered,
     Error,
     MultisigMissing,
@@ -109,6 +107,20 @@ pub enum OrderStatus {
     Signed,
     Shipped,
     Submitted,
+}
+
+impl OrderStatusType {
+    pub fn value(&self) -> i32 {
+        match *self {
+            OrderStatusType::Delivered => 0,
+            OrderStatusType::Error => 1,
+            OrderStatusType::MultisigMissing => 2,
+            OrderStatusType::MulitsigComplete => 3,
+            OrderStatusType::Signed => 4,
+            OrderStatusType::Shipped => 5,
+            OrderStatusType::Submitted => 6,
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -139,8 +151,8 @@ pub enum I2pStatus {
 impl I2pStatus {
     pub fn value(&self) -> String {
         match *self {
-            I2pStatus::Accept => "Accepting tunnels".to_string(),
-            I2pStatus::Reject => "Rejecting tunnels: Starting up".to_string(),
+            I2pStatus::Accept => String::from("Accepting tunnels"),
+            I2pStatus::Reject => String::from("Rejecting tunnels: Starting up"),
         }
     }
 }
@@ -155,17 +167,22 @@ pub enum LogLevel {
     WARN,
 }
 
-impl fmt::Display for LogLevel {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{:?}", self)
+impl LogLevel {
+    pub fn value(&self) -> String {
+        match *self {
+            LogLevel::DEBUG => String::from("DEBUG"),
+            LogLevel::ERROR => String::from("ERROR"),
+            LogLevel::INFO => String::from("INFO"),
+            LogLevel::WARN => String::from("DEBUG"),
+        }
     }
 }
 
 pub async fn log(level: LogLevel, msg: &str) -> () {
     let args = Args::parse();
     let set_level = args.log_level.split(",");
-    let vec: Vec<String> = set_level.map(|s| s.to_string()).collect();
-    if vec.contains(&level.to_string()) {
+    let vec: Vec<String> = set_level.map(|s| String::from(s)).collect();
+    if vec.contains(&level.value()) {
         println!(
             "{}", format!("|{:?}\t|\t|{:?}| => {}", level, chrono::offset::Utc::now(), msg)
         );
@@ -223,7 +240,7 @@ pub struct Args {
 // START PGDB stuff
 pub async fn establish_pgdb_connection() -> PgConnection {
     let args = Args::parse();
-    let db_string: String = args.postgres_db_url.to_string();
+    let db_string: String = String::from(args.postgres_db_url);
     PgConnection::establish(&db_string)
         .unwrap_or_else(|_| panic!("Error connecting to {}", db_string))
 }
@@ -378,7 +395,7 @@ Authorization {
         return create_auth(connection, address).await;
     }
     let sig_address: String = verify_signature(address, data, signature).await;
-    if sig_address == ApplicationErrors::LoginError.to_string() {
+    if sig_address == ApplicationErrors::LoginError.value() {
         return f_auth;
     }
     let results = customers
@@ -412,7 +429,7 @@ Authorization {
         return create_auth(connection, address).await;
     }
     let sig_address: String = verify_signature(address, data, signature).await;
-    if sig_address == ApplicationErrors::LoginError.to_string() {
+    if sig_address == ApplicationErrors::LoginError.value() {
         return f_auth;
     }
     let results = vendors
@@ -646,7 +663,7 @@ pub async fn verify_access(address: &str, signature: &str) -> bool {
     let sig_address: String = verify_signature(
         String::from(address), data, String::from(signature)
     ).await;
-    if sig_address == ApplicationErrors::LoginError.to_string() {
+    if sig_address == ApplicationErrors::LoginError.value() {
         return false;
     }
     return true;
@@ -654,13 +671,31 @@ pub async fn verify_access(address: &str, signature: &str) -> bool {
 // END PGDB stuff
 
 // XMR RPC stuff
+enum XmrRpcFields {
+    GetVersion,
+    Id,
+    JsonRpcVersion,
+    Verify,
+}
+
+impl XmrRpcFields {
+    pub fn value(&self) -> String {
+        match *self {
+            XmrRpcFields::GetVersion => String::from("get_version"),
+            XmrRpcFields::Id => String::from("0"),
+            XmrRpcFields::JsonRpcVersion => String::from("2.0"),
+            XmrRpcFields::Verify => String::from("verify"),
+        }
+    }
+}
+
 pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
     let client = reqwest::Client::new();
     let host = get_monero_rpc_host();
     let req = reqres::XmrRpcVersionRequest { 
-        jsonrpc: "2.0".to_string(), 
-        id: "0".to_string(), 
-        method: "get_version".to_string()
+        jsonrpc: XmrRpcFields::JsonRpcVersion.value(), 
+        id: XmrRpcFields::Id.value(), 
+        method: XmrRpcFields::GetVersion.value(),
     };
     match client.post(host).json(&req).send().await
     {
@@ -700,9 +735,9 @@ pub async fn verify_signature(
         signature,
     };
     let req = reqres::XmrRpcVerifyRequest { 
-        jsonrpc: "2.0".to_string(), 
-        id: "0".to_string(), 
-        method: "verify".to_string(),
+        jsonrpc: XmrRpcFields::JsonRpcVersion.value(), 
+        id: XmrRpcFields::Id.value(), 
+        method: XmrRpcFields::Verify.value(),
         params,
     };
     match client.post(host).json(&req).send().await
@@ -714,14 +749,14 @@ pub async fn verify_signature(
                     if res.result.good {
                         req.params.address
                     } else {
-                        ApplicationErrors::LoginError.to_string()
+                        ApplicationErrors::LoginError.value()
                     }
                 }
-                _=> ApplicationErrors::LoginError.to_string()
+                _=> ApplicationErrors::LoginError.value()
             }
         }
         Err(_e) => {
-            ApplicationErrors::LoginError.to_string()
+            ApplicationErrors::LoginError.value()
         }
     }
 }
@@ -751,10 +786,10 @@ pub async fn check_i2p_connection() -> () {
                     Ok(res) => {
                         // split the html from the local i2p tunnels page
                         let split1 = res.split("<h4><span class=\"tunnelBuildStatus\">");
-                        let mut v1: Vec<String> = split1.map(|s| s.to_string()).collect();
+                        let mut v1: Vec<String> = split1.map(|s| String::from(s)).collect();
                         let s1 = v1.remove(1);
                         let v2 = s1.split("</span></h4>");
-                        let mut split2: Vec<String> = v2.map(|s| s.to_string()).collect();
+                        let mut split2: Vec<String> = v2.map(|s| String::from(s)).collect();
                         let status: String = split2.remove(0);
                         if status == I2pStatus::Accept.value() {
                             log(LogLevel::INFO, "I2P is currently accepting tunnels.").await;
@@ -788,13 +823,13 @@ pub async fn get_login_auth
 
 fn get_monero_rpc_host() -> String {
     let args = Args::parse();
-    let rpc = args.monero_rpc_host.to_string();
+    let rpc = String::from(args.monero_rpc_host);
     format!("{}/json_rpc", rpc)
 }
 
 pub fn get_release_env() -> ReleaseEnvironment {
     let args = Args::parse();
-    let env = args.release_env.to_string();
+    let env = String::from(args.release_env);
     if env == "prod" {
         return ReleaseEnvironment::Production;
     } else {
