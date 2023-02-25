@@ -106,7 +106,7 @@ async fn update_vendor(
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
     // TODO: dont pass id, pull info from db after auth
-    let m_vendor = modify_vendor(id, data, update_type).await;
+    let m_vendor: models::Vendor = modify_vendor(id, data, update_type).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetVendorResponse::build(m_vendor)),
@@ -166,7 +166,7 @@ async fn update_product(
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
     // TODO: dont pass vid, pull info from db after auth
-    let m_product = modify_product(id, data, update_type).await;
+    let m_product: models::Product = modify_product(id, data, update_type).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetProductResponse::build(m_product)),
@@ -208,7 +208,7 @@ async fn rocket() -> _ {
     log(LogLevel::INFO, &("mpi2p is starting up")).await;
     establish_pgdb_connection().await;
     monero::check_xmr_rpc_connection().await;
-    let env = get_release_env().value();
+    let env: String = get_release_env().value();
     if env != ReleaseEnvironment::Development.value() {
         i2p::check_i2p_connection().await;
     }
