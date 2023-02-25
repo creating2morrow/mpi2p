@@ -1,13 +1,9 @@
 #[macro_use]
 extern crate rocket;
+use mpi2p::*;
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
-
-use crate::logger::{log, LogLevel};
-use crate:: monero;
-use crate::i2p;
-use mpi2p::*;
 
 #[cfg(test)]
 mod tests;
@@ -33,12 +29,12 @@ async fn get_customer(
     address: String,
     signature: String,
 ) -> Custom<Json<reqres::GetCustomerResponse>> {
-    let is_verified: bool = verify_access(&address, &signature).await;
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
         let res: reqres::GetCustomerResponse = Default::default();
         return Custom(Status::Unauthorized, Json(res));
     }
-    let m_customer: models::Customer = find_customer(address).await;
+    let m_customer: models::Customer = customer::find_customer(address).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetCustomerResponse::build(m_customer)),
@@ -49,11 +45,11 @@ async fn get_customer(
 /// Protected: true
 #[get("/<address>/<signature>")]
 async fn get_vendor(address: String, signature: String) -> Custom<Json<reqres::GetVendorResponse>> {
-    let is_verified: bool = verify_access(&address, &signature).await;
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
-    let m_vendor: models::Vendor = find_vendor(address).await;
+    let m_vendor: models::Vendor = vendor::find_vendor(address).await;
     if m_vendor.v_xmr_address == String::from("") {
         return Custom(Status::NotFound, Json(Default::default()));
     }
@@ -70,7 +66,7 @@ async fn login(
     corv: String,
     signature: String,
 ) -> Custom<Json<reqres::GetAuthResponse>> {
-    let m_auth: models::Authorization = get_login_auth(address, corv, signature).await;
+    let m_auth: models::Authorization = auth::get_login_auth(address, corv, signature).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetAuthResponse::build(m_auth)),
@@ -84,7 +80,7 @@ async fn update_customer(
     data: String,
     update_type: i32,
 ) -> Custom<Json<reqres::GetCustomerResponse>> {
-    let m_customer: models::Customer = modify_customer(id, data, update_type).await;
+    let m_customer: models::Customer = customer::modify_customer(id, data, update_type).await;
     // TODO: dont pass id, pull info from db after auth
     Custom(
         Status::Accepted,
@@ -101,12 +97,12 @@ async fn update_vendor(
     data: String,
     update_type: i32,
 ) -> Custom<Json<reqres::GetVendorResponse>> {
-    let is_verified: bool = verify_access(&address, &signature).await;
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
     // TODO: dont pass id, pull info from db after auth
-    let m_vendor: models::Vendor = modify_vendor(id, data, update_type).await;
+    let m_vendor: models::Vendor = vendor::modify_vendor(id, data, update_type).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetVendorResponse::build(m_vendor)),
@@ -120,13 +116,13 @@ async fn create_product(
     signature: String,
     v_id: String,
 ) -> Custom<Json<reqres::GetProductResponse>> {
-    let is_verified: bool = verify_access(&address, &signature).await;
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
         let res: reqres::GetProductResponse = Default::default();
         return Custom(Status::Unauthorized, Json(res));
     }
     // TODO: dont pass id, pull info from db after auth
-    let m_product: models::Product = create_new_product(v_id).await;
+    let m_product: models::Product = product::create_new_product(v_id).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetProductResponse::build(m_product)),
@@ -140,12 +136,12 @@ async fn get_vendor_products(
     signature: String,
     v_id: String,
 ) -> Custom<Json<reqres::GetVendorProductsResponse>> {
-    let is_verified: bool = verify_access(&address, &signature).await;
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
     // TODO: dont pass vid, pull info from db after auth
-    let m_products: Vec<models::Product> = find_vendor_products(v_id).await;
+    let m_products: Vec<models::Product> = product::find_vendor_products(v_id).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetVendorProductsResponse::build(m_products)),
@@ -161,12 +157,12 @@ async fn update_product(
     data: String,
     update_type: i32,
 ) -> Custom<Json<reqres::GetProductResponse>> {
-    let is_verified: bool = verify_access(&address, &signature).await;
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
     // TODO: dont pass vid, pull info from db after auth
-    let m_product: models::Product = modify_product(id, data, update_type).await;
+    let m_product: models::Product = product::modify_product(id, data, update_type).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetProductResponse::build(m_product)),
@@ -180,14 +176,14 @@ async fn initialize_order(
     signature: String,
     pid: String,
 ) -> Custom<Json<reqres::InitializeOrderResponse>> {
-    let is_verified: bool = verify_access(&address, &signature).await;
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
     // get the cid from the address after verification
-    let m_customer = find_customer(address).await;
+    let m_customer = customer::find_customer(address).await;
     let temp_pid = String::from(&pid);
-    let m_order: models::Order = create_new_order(m_customer.cid, temp_pid).await;
+    let m_order: models::Order = order::create_new_order(m_customer.cid, temp_pid).await;
     Custom(
         Status::Accepted,
         Json(reqres::InitializeOrderResponse::build(pid, m_order)),
@@ -205,14 +201,14 @@ async fn initialize_order(
 #[launch]
 async fn rocket() -> _ {
     // pdgb and monero-wallet-rpc are required to be up at boot time
-    log(LogLevel::INFO, &("mpi2p is starting up")).await;
-    establish_pgdb_connection().await;
+    logger::log(logger::LogLevel::INFO, &("mpi2p is starting up")).await;
+    utils::establish_pgdb_connection().await;
     monero::check_xmr_rpc_connection().await;
-    let env: String = get_release_env().value();
-    if env != ReleaseEnvironment::Development.value() {
+    let env: String = utils::get_release_env().value();
+    if env != utils::ReleaseEnvironment::Development.value() {
         i2p::check_i2p_connection().await;
     }
-    log(LogLevel::INFO, &(env + " - mpi2p is online")).await;
+    logger::log(logger::LogLevel::INFO, &(env + " - mpi2p is online")).await;
     rocket::build()
         .mount("/", routes![login])
         .mount("/customer", routes![get_customer, update_customer])

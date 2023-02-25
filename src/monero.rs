@@ -1,8 +1,8 @@
-use clap::Parser;
 use crate::args;
-use crate::reqres;
 use crate::logger;
+use crate::reqres;
 use crate::utils;
+use clap::Parser;
 
 fn get_monero_rpc_host() -> String {
     let args = args::Args::parse();
@@ -60,7 +60,11 @@ pub async fn check_xmr_rpc_connection() -> () {
 }
 
 pub async fn verify_signature(address: String, data: String, signature: String) -> String {
-    logger::log(logger::LogLevel::INFO, "Signature verification in progress.").await;
+    logger::log(
+        logger::LogLevel::INFO,
+        "Signature verification in progress.",
+    )
+    .await;
     let client = reqwest::Client::new();
     let host = get_monero_rpc_host();
     let params = reqres::XmrRpcVerifyParams {

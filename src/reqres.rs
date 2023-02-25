@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
 use crate::models;
+use serde::{Deserialize, Serialize};
 // All http requests and responses are here
 
 #[derive(Deserialize, Debug)]
