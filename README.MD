@@ -42,8 +42,18 @@ i2p marketplace api standards bootstrap
 ## Development
 
 * setup dependencies as required
+* `lib.rs` - add new modules here
+* related code should have a module (customer, vendor, etc.)
+* `models.rs` - if updating db generate new `schema.rs`
+    * `diesel migration run`
+    * `rm src/schema.rs && diesel print-schema > src/schema.rs` 
+* `main.rs` - controllers / app startup are here
 * `cargo run`
 * hack away
+
+## Production
+
+Maybe one day
 
 ## Podman Container
 
@@ -100,6 +110,7 @@ is screened accordingly. The login API is used to get the random data.
 * [x] Vendor APIs
 * [x] Product APIs
 * [ ] Order APIs / Monero Multisignature integration - 3/23
+* [ ] Automate I2P tunnel creation, start/stop, etc. - 3/23
 * [ ] From_Request Async Trait Authorization flow - 4/23
 * [ ] Unit tests - 5/23
 * [ ] Functional tests - 5/23
