@@ -1,10 +1,10 @@
 #[macro_use]
 extern crate rocket;
-
 use mpi2p::*;
-
 #[cfg(test)]
 mod tests;
+
+// The only changes in here should be mounting new controller methods
 
 #[launch]
 async fn rocket() -> _ {
