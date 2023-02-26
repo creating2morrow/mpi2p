@@ -5,54 +5,54 @@ use crate::utils;
 use clap::Parser;
 use diqwest::WithDigestAuth;
 
-struct XmrRpcLogin {
+struct RpcLogin {
     username: String,
     credential: String,
 }
 
-enum XmrRpcFields {
+enum RpcFields {
     GetVersion,
     Id,
     JsonRpcVersion,
     Verify,
 }
 
-impl XmrRpcFields {
+impl RpcFields {
     pub fn value(&self) -> String {
         match *self {
-            XmrRpcFields::GetVersion => String::from("get_version"),
-            XmrRpcFields::Id => String::from("0"),
-            XmrRpcFields::JsonRpcVersion => String::from("2.0"),
-            XmrRpcFields::Verify => String::from("verify"),
+            RpcFields::GetVersion => String::from("get_version"),
+            RpcFields::Id => String::from("0"),
+            RpcFields::JsonRpcVersion => String::from("2.0"),
+            RpcFields::Verify => String::from("verify"),
         }
     }
 }
 
 /// Get monero rpc host from command line argument
-fn get_monero_rpc_host() -> String {
+fn get_rpc_host() -> String {
     let args = args::Args::parse();
     let rpc = String::from(args.monero_rpc_host);
     format!("{}/json_rpc", rpc)
 }
 
 /// Get monero rpc host from command line argument
-fn get_monero_rpc_creds() -> XmrRpcLogin {
+fn get_rpc_creds() -> RpcLogin {
     let args = args::Args::parse();
     let username = String::from(args.monero_rpc_username);
     let credential = String::from(args.monero_rpc_cred);
-    XmrRpcLogin { username, credential }
+    RpcLogin { username, credential }
 }
 
 /// Performs rpc 'get_version' method
 pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
     let client = reqwest::Client::new();
-    let host = get_monero_rpc_host();
+    let host = get_rpc_host();
     let req = reqres::XmrRpcVersionRequest {
-        jsonrpc: XmrRpcFields::JsonRpcVersion.value(),
-        id: XmrRpcFields::Id.value(),
-        method: XmrRpcFields::GetVersion.value(),
+        jsonrpc: RpcFields::JsonRpcVersion.value(),
+        id: RpcFields::Id.value(),
+        method: RpcFields::GetVersion.value(),
     };
-    let login: XmrRpcLogin = get_monero_rpc_creds();
+    let login: RpcLogin = get_rpc_creds();
     match client.post(host).json(&req)
     .send_with_digest_auth(&login.username, &login.credential).await {
         Ok(response) => {
@@ -71,7 +71,7 @@ pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
 }
 
 /// Helper function for checking xmr rpc online during app startup
-pub async fn check_xmr_rpc_connection() -> () {
+pub async fn check_rpc_connection() -> () {
     let res: reqres::XmrRpcVersionResponse = get_xmr_version().await;
     if res.result.version == 0 {
         logger::log(
@@ -89,19 +89,19 @@ pub async fn verify_signature(address: String, data: String, signature: String) 
     )
     .await;
     let client = reqwest::Client::new();
-    let host = get_monero_rpc_host();
+    let host = get_rpc_host();
     let params = reqres::XmrRpcVerifyParams {
         address,
         data,
         signature,
     };
     let req = reqres::XmrRpcVerifyRequest {
-        jsonrpc: XmrRpcFields::JsonRpcVersion.value(),
-        id: XmrRpcFields::Id.value(),
-        method: XmrRpcFields::Verify.value(),
+        jsonrpc: RpcFields::JsonRpcVersion.value(),
+        id: RpcFields::Id.value(),
+        method: RpcFields::Verify.value(),
         params,
     };
-    let login: XmrRpcLogin = get_monero_rpc_creds();
+    let login: RpcLogin = get_rpc_creds();
     match client.post(host).json(&req)
     .send_with_digest_auth(&login.username, &login.credential).await {
         Ok(response) => {
