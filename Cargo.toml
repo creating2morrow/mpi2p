@@ -1,4 +1,3 @@
-
 [package]
 name = "mpi2p"
 version = "0.1.0"
@@ -10,6 +9,7 @@ publish = false
 chrono = "0.4.23"
 clap = { version = "4.1.4", features = ["derive"] }
 diesel = { version = "2.0.0", features = ["postgres"] }
+diqwest = "1.1.1"
 hex = "0.4.3"
 rand = "0.8.5"
 rand_core = "0.6.4"

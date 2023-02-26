@@ -3,8 +3,12 @@ use crate::logger;
 use crate::reqres;
 use crate::utils;
 use clap::Parser;
+use diqwest::WithDigestAuth;
 
-// TODO: implement diqwest - https://docs.rs/diqwest/latest/diqwest/
+struct XmrRpcLogin {
+    username: String,
+    credential: String,
+}
 
 enum XmrRpcFields {
     GetVersion,
@@ -31,6 +35,14 @@ fn get_monero_rpc_host() -> String {
     format!("{}/json_rpc", rpc)
 }
 
+/// Get monero rpc host from command line argument
+fn get_monero_rpc_creds() -> XmrRpcLogin {
+    let args = args::Args::parse();
+    let username = String::from(args.monero_rpc_username);
+    let credential = String::from(args.monero_rpc_cred);
+    XmrRpcLogin { username, credential }
+}
+
 /// Performs rpc 'get_version' method
 pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
     let client = reqwest::Client::new();
@@ -40,7 +52,9 @@ pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
         id: XmrRpcFields::Id.value(),
         method: XmrRpcFields::GetVersion.value(),
     };
-    match client.post(host).json(&req).send().await {
+    let login: XmrRpcLogin = get_monero_rpc_creds();
+    match client.post(host).json(&req)
+    .send_with_digest_auth(&login.username, &login.credential).await {
         Ok(response) => {
             let res = response.json::<reqres::XmrRpcVersionResponse>().await;
             match res {
@@ -60,7 +74,10 @@ pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
 pub async fn check_xmr_rpc_connection() -> () {
     let res: reqres::XmrRpcVersionResponse = get_xmr_version().await;
     if res.result.version == 0 {
-        panic!("Failed to connect to monero-wallet-rpc");
+        logger::log(
+            logger::LogLevel::ERROR,
+            "Failed to connect to monero-wallet-rpc"
+        ).await;
     }
 }
 
@@ -84,7 +101,9 @@ pub async fn verify_signature(address: String, data: String, signature: String) 
         method: XmrRpcFields::Verify.value(),
         params,
     };
-    match client.post(host).json(&req).send().await {
+    let login: XmrRpcLogin = get_monero_rpc_creds();
+    match client.post(host).json(&req)
+    .send_with_digest_auth(&login.username, &login.credential).await {
         Ok(response) => {
             let res = response.json::<reqres::XmrRpcVerifyResponse>().await;
             match res {

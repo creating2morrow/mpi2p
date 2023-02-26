@@ -28,7 +28,19 @@ pub struct Args {
         default_value = "http://localhost:38083"
     )]
     pub monero_rpc_host: String,
-    /// Monero RPC HOST
+    /// Monero RPC Username
+    #[arg(
+        long,
+        help = "Monero RPC username."
+    )]
+    pub monero_rpc_username: String,
+    /// Monero RPC credential
+    #[arg(
+        long,
+        help = "Monero RPC credential.",
+    )]
+    pub monero_rpc_cred: String,
+    /// Postgres db url string
     #[arg(
         short,
         long,
