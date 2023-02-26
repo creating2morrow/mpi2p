@@ -4,11 +4,7 @@ use crate::reqres;
 use crate::utils;
 use clap::Parser;
 
-fn get_monero_rpc_host() -> String {
-    let args = args::Args::parse();
-    let rpc = String::from(args.monero_rpc_host);
-    format!("{}/json_rpc", rpc)
-}
+// TODO: implement diqwest - https://docs.rs/diqwest/latest/diqwest/
 
 enum XmrRpcFields {
     GetVersion,
@@ -28,6 +24,14 @@ impl XmrRpcFields {
     }
 }
 
+/// Get monero rpc host from command line argument
+fn get_monero_rpc_host() -> String {
+    let args = args::Args::parse();
+    let rpc = String::from(args.monero_rpc_host);
+    format!("{}/json_rpc", rpc)
+}
+
+/// Performs rpc 'get_version' method
 pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
     let client = reqwest::Client::new();
     let host = get_monero_rpc_host();
@@ -52,6 +56,7 @@ pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
     }
 }
 
+/// Helper function for checking xmr rpc online during app startup
 pub async fn check_xmr_rpc_connection() -> () {
     let res: reqres::XmrRpcVersionResponse = get_xmr_version().await;
     if res.result.version == 0 {
@@ -59,6 +64,7 @@ pub async fn check_xmr_rpc_connection() -> () {
     }
 }
 
+/// Performs the xmr rpc 'verify' method
 pub async fn verify_signature(address: String, data: String, signature: String) -> String {
     logger::log(
         logger::LogLevel::INFO,

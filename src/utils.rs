@@ -49,6 +49,7 @@ impl ApplicationErrors {
     }
 }
 
+/// Helper for connecting to db on ORM
 pub async fn establish_pgdb_connection() -> PgConnection {
     let args = args::Args::parse();
     let db_string: String = String::from(args.postgres_db_url);
@@ -56,12 +57,14 @@ pub async fn establish_pgdb_connection() -> PgConnection {
         .unwrap_or_else(|_| panic!("Error connecting to {}", db_string))
 }
 
+/// Random data generation for authorization signing
 pub fn generate_rnd() -> String {
     let mut data = [0u8; 32];
     rand::thread_rng().fill_bytes(&mut data);
     hex::encode(data)
 }
 
+/// Helper for separation of dev and prod concerns
 pub fn get_release_env() -> ReleaseEnvironment {
     let args = args::Args::parse();
     let env = String::from(args.release_env);

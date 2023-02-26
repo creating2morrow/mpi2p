@@ -21,6 +21,7 @@ impl LogLevel {
     }
 }
 
+/// Log, log better than bad its good
 pub async fn log(level: LogLevel, msg: &str) -> () {
     let args = args::Args::parse();
     let set_level = args.log_level.split(",");

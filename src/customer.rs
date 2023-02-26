@@ -8,6 +8,7 @@ use crate::vendor;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
+/// Create a new customer
 async fn create_customer(
     conn: &mut PgConnection,
     xmr_address: &str,
@@ -28,6 +29,7 @@ async fn create_customer(
         .expect("Error saving new customer")
 }
 
+/// Lookup customer
 pub async fn find_customer(address: String) -> Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
@@ -50,6 +52,7 @@ pub async fn find_customer(address: String) -> Customer {
     }
 }
 
+/// Performs the signature verfication against stored auth
 pub async fn verify_customer_login(address: String, signature: String) -> Authorization {
     let connection = &mut utils::establish_pgdb_connection().await;
     use crate::schema::customers::dsl::*;
@@ -83,6 +86,8 @@ pub async fn verify_customer_login(address: String, signature: String) -> Author
     }
 }
 
+
+/// Update customer information
 pub async fn modify_customer(_id: String, data: String, update_type: i32) -> Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;

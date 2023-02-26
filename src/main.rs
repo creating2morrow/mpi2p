@@ -1,9 +1,10 @@
 #[macro_use]
 extern crate rocket;
-use mpi2p::*;
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
+
+use mpi2p::*;
 
 #[cfg(test)]
 mod tests;
@@ -50,9 +51,6 @@ async fn get_vendor(address: String, signature: String) -> Custom<Json<reqres::G
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
     let m_vendor: models::Vendor = vendor::find_vendor(address).await;
-    if m_vendor.v_xmr_address == String::from("") {
-        return Custom(Status::NotFound, Json(Default::default()));
-    }
     Custom(
         Status::Accepted,
         Json(reqres::GetVendorResponse::build(m_vendor)),

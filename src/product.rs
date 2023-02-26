@@ -23,6 +23,7 @@ impl ProductUpdateType {
     }
 }
 
+/// Create a skeleton for the product
 pub async fn create_new_product(v_id: String) -> Product {
     use crate::schema::products;
     let connection = &mut utils::establish_pgdb_connection().await;

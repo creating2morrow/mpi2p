@@ -10,6 +10,7 @@ use clap::Parser;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
+/// Determine customer or vendor login
 pub async fn get_login_auth(address: String, corv: String, signature: String) -> Authorization {
     if corv == utils::LoginType::Customer.value() {
         customer::verify_customer_login(address, signature).await
@@ -18,6 +19,7 @@ pub async fn get_login_auth(address: String, corv: String, signature: String) ->
     }
 }
 
+/// Create authorization data to sign and expiration
 pub async fn create_auth(conn: &mut PgConnection, address: String) -> Authorization {
     use crate::schema::authorizations;
     let aid: String = utils::generate_rnd();
@@ -35,6 +37,7 @@ pub async fn create_auth(conn: &mut PgConnection, address: String) -> Authorizat
         .expect("Error saving new auth")
 }
 
+/// Authorization lookup for recurring requests
 pub async fn find_auth(address: String) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
@@ -57,6 +60,7 @@ pub async fn find_auth(address: String) -> Authorization {
     }
 }
 
+/// Update new authorization creation time
 async fn update_auth_expiration(_id: &str) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
@@ -71,6 +75,7 @@ async fn update_auth_expiration(_id: &str) -> Authorization {
     }
 }
 
+/// Update auth data to sign
 async fn update_auth_data(_id: &str) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
@@ -112,6 +117,7 @@ pub async fn verify_access(address: &str, signature: &str) -> bool {
     return true;
 }
 
+/// get the auth expiration command line configuration
 fn get_auth_expiration() -> i64 {
     let args = args::Args::parse();
     args.token_timeout * 60
