@@ -1,5 +1,6 @@
 pub mod args;       // Command line arguments
 pub mod auth;       // Authorization repo/service layer
+pub mod controller; // HTTP entry point
 pub mod customer;   // Customer repo/service layer
 pub mod i2p;        // i2P repo/service layer
 pub mod logger;     // Logging
