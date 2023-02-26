@@ -5,7 +5,7 @@ use crate::utils;
 use diesel::prelude::*;
 
 #[derive(Debug)]
-pub enum UpdateType {
+enum UpdateType {
     InStock,
     Description,
     Name,

@@ -26,13 +26,11 @@ curl -X PATCH http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/<customer|vendor>/
 
 # get
 # create a new product
-# <vid> - vendor id
-curl -iv http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/product/create/<vid>
+curl -iv http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/product/create
 
 # get
 # return all products for a vendor
-# <vid> - vendor id
-curl -iv http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/products/<vid>
+curl -iv http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/products/
 
 # update product
 # <pid> - i32

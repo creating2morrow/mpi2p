@@ -179,6 +179,7 @@ pub struct InitializeOrderResponse {
     pub vend_kex_1: String,
     pub vend_kex_2: String,
     pub vend_kex_3: String,
+    pub vend_msig_info: String,
 }
 
 impl Default for InitializeOrderResponse {
@@ -206,6 +207,7 @@ impl Default for InitializeOrderResponse {
             vend_kex_1: String::from(""),
             vend_kex_2: String::from(""),
             vend_kex_3: String::from(""),
+            vend_msig_info: String::from(""),
         }
     }
 }
@@ -304,6 +306,7 @@ impl InitializeOrderResponse {
             vend_kex_1: m_order.o_vend_kex_1,
             vend_kex_2: m_order.o_vend_kex_2,
             vend_kex_3: m_order.o_vend_kex_3,
+            vend_msig_info: m_order.o_vend_msig_info,
         }
     }
 }

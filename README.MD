@@ -33,7 +33,7 @@ i2p marketplace api standards bootstrap
 ## Diesel ORM
 
 * install diesel cli from [diesel.rs](https://diesel.rs/guides/configuring-diesel-cli.html)
-* `diesel migration run`
+* `diesel migration run --database-url <db_url_string>`
 
 ## Monero
 
@@ -48,7 +48,7 @@ i2p marketplace api standards bootstrap
 * related code should have a module (customer, vendor, etc.)
 * `models.rs` - if updating db generate new `schema.rs`
     * `diesel migration run`
-    * `rm src/schema.rs && diesel print-schema > src/schema.rs` 
+    * `rm src/schema.rs && diesel print-schema --database-url <db_url_string> > src/schema.rs` 
 * `main.rs` - controllers / app startup are here
 * `cargo run -- --monero-rpc-username user --monero-rpc-cred pass`
 * hack away
