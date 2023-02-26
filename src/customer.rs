@@ -1,12 +1,26 @@
+// Customer repo/service layer
 use crate::auth;
 use crate::logger;
 use crate::models::*;
 use crate::monero;
 use crate::schema;
 use crate::utils;
-use crate::vendor;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+
+enum UpdateType {
+    Name,
+    Pgp,
+}
+
+impl UpdateType {
+    pub fn value(&self) -> i32 {
+        match *self {
+            UpdateType::Name => 2,
+            UpdateType::Pgp => 3,
+        }
+    }
+}
 
 /// Create a new customer
 async fn create(
@@ -91,7 +105,7 @@ pub async fn verify_login(address: String, signature: String) -> Authorization {
 pub async fn modify(_id: String, data: String, update_type: i32) -> Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
-    if update_type == vendor::VendorUpdateType::Name.value() {
+    if update_type == UpdateType::Name.value() {
         logger::log(logger::LogLevel::INFO, "Modify customer name.").await;
         let m = diesel::update(customers.find(_id))
             .set(c_name.eq(data))
@@ -100,7 +114,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Customer {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == vendor::VendorUpdateType::Pgp.value() {
+    } else if update_type == UpdateType::Pgp.value() {
         logger::log(logger::LogLevel::INFO, "Modify customer PGP.").await;
         let m = diesel::update(customers.find(_id))
             .set(c_pgp.eq(data))

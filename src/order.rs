@@ -5,7 +5,7 @@ use crate::utils;
 use diesel::prelude::*;
 
 #[derive(Debug)]
-pub enum OrderStatusType {
+pub enum StatusType {
     Delivered,
     Error,
     MultisigMissing,
@@ -15,21 +15,21 @@ pub enum OrderStatusType {
     Submitted,
 }
 
-impl OrderStatusType {
+impl StatusType {
     pub fn value(&self) -> i32 {
         match *self {
-            OrderStatusType::Delivered => 0,
-            OrderStatusType::Error => 1,
-            OrderStatusType::MultisigMissing => 2,
-            OrderStatusType::MulitsigComplete => 3,
-            OrderStatusType::Signed => 4,
-            OrderStatusType::Shipped => 5,
-            OrderStatusType::Submitted => 6,
+            StatusType::Delivered => 0,
+            StatusType::Error => 1,
+            StatusType::MultisigMissing => 2,
+            StatusType::MulitsigComplete => 3,
+            StatusType::Signed => 4,
+            StatusType::Shipped => 5,
+            StatusType::Submitted => 6,
         }
     }
 }
 
-enum OrderUpdateType {
+enum UpdateType {
     CustomerKex1,
     CustomerKex2,
     CustomerKex3,
@@ -47,24 +47,24 @@ enum OrderUpdateType {
     Quantity,
 }
 
-impl OrderUpdateType {
+impl UpdateType {
     pub fn value(&self) -> i32 {
         match *self {
-            OrderUpdateType::CustomerKex1 => 0,
-            OrderUpdateType::CustomerKex2 => 1,
-            OrderUpdateType::CustomerKex3 => 2,
-            OrderUpdateType::CustomerMultisigInfo => 3,
-            OrderUpdateType::Deliver => 3,
-            OrderUpdateType::Hash => 3,
-            OrderUpdateType::SignMultisig => 3,
-            OrderUpdateType::Ship => 3,
-            OrderUpdateType::SubmitMultisig => 3,
-            OrderUpdateType::Status => 3,
-            OrderUpdateType::VendorKex1 => 3,
-            OrderUpdateType::VendorKex2 => 3,
-            OrderUpdateType::VendorKex3 => 3,
-            OrderUpdateType::VendorMultisigInfo => 3,
-            OrderUpdateType::Quantity => 3,
+            UpdateType::CustomerKex1 => 0,
+            UpdateType::CustomerKex2 => 1,
+            UpdateType::CustomerKex3 => 2,
+            UpdateType::CustomerMultisigInfo => 3,
+            UpdateType::Deliver => 4,
+            UpdateType::Hash => 5,
+            UpdateType::SignMultisig => 6,
+            UpdateType::Ship => 7,
+            UpdateType::SubmitMultisig => 8,
+            UpdateType::Status => 9,
+            UpdateType::VendorKex1 => 11,
+            UpdateType::VendorKex2 => 12,
+            UpdateType::VendorKex3 => 13,
+            UpdateType::VendorMultisigInfo => 14,
+            UpdateType::Quantity => 15,
         }
     }
 }
@@ -105,11 +105,13 @@ pub async fn create(cid: String, pid: String) -> Order {
         .expect("Error saving new order")
 }
 
+
+/// TODO: modification auth needs to be checked per update type
 pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
     use self::schema::orders::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
-    
-    if update_type == OrderUpdateType::CustomerKex1.value() {
+    // this else if chain is awful, TODO: refactor
+    if update_type == UpdateType::CustomerKex1.value() {
         logger::log(logger::LogLevel::INFO, "Modify order customer kex 1.").await;
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_1.eq(data))
@@ -118,7 +120,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == OrderUpdateType::CustomerKex2.value() {
+    } else if update_type == UpdateType::CustomerKex2.value() {
         logger::log(logger::LogLevel::INFO, "Modify customer kex 2.").await;
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_2.eq(data))
@@ -127,7 +129,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == OrderUpdateType::CustomerKex3.value() {
+    } else if update_type == UpdateType::CustomerKex3.value() {
         logger::log(logger::LogLevel::INFO, "Modify customer kex 3.").await;
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_3.eq(data))

@@ -5,20 +5,20 @@ use crate::utils;
 use diesel::prelude::*;
 
 #[derive(Debug)]
-pub enum ProductUpdateType {
+pub enum UpdateType {
     InStock,
     Description,
     Name,
     Price,
 }
 
-impl ProductUpdateType {
+impl UpdateType {
     pub fn value(&self) -> i32 {
         match *self {
-            ProductUpdateType::InStock => 0,
-            ProductUpdateType::Description => 1,
-            ProductUpdateType::Name => 2,
-            ProductUpdateType::Price => 3,
+            UpdateType::InStock => 0,
+            UpdateType::Description => 1,
+            UpdateType::Name => 2,
+            UpdateType::Price => 3,
         }
     }
 }
@@ -49,7 +49,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
     // TODO: this isn't right. The product should automatically
     // get updated based on the qty. Qty should be updated according
     // to settled orders
-    if update_type == ProductUpdateType::InStock.value() {
+    if update_type == UpdateType::InStock.value() {
         logger::log(logger::LogLevel::INFO, "Modify product active status.").await;
         let m = diesel::update(products.find(_id))
             .set(in_stock.eq(true))
@@ -58,7 +58,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == ProductUpdateType::Description.value() {
+    } else if update_type == UpdateType::Description.value() {
         logger::log(logger::LogLevel::INFO, "Modify product description.").await;
         let m = diesel::update(products.find(_id))
             .set(p_description.eq(data))
@@ -67,7 +67,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == ProductUpdateType::Name.value() {
+    } else if update_type == UpdateType::Name.value() {
         logger::log(logger::LogLevel::INFO, "Modify product name.").await;
         let m = diesel::update(products.find(_id))
             .set(p_name.eq(data))
@@ -76,7 +76,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == ProductUpdateType::Price.value() {
+    } else if update_type == UpdateType::Price.value() {
         logger::log(logger::LogLevel::INFO, "Modify product price.").await;
         let price_data = match data.parse::<i64>() {
             Ok(n) => n,
