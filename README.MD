@@ -1,5 +1,7 @@
 # mpi2p
 
+[![Rust](https://github.com/creating2morrow/mpi2p/actions/workflows/rust.yml/badge.svg)](https://github.com/creating2morrow/mpi2p/actions/workflows/rust.yml)
+
 i2p marketplace api standards bootstrap
 
 * This is project is primarily for research and development use
