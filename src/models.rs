@@ -5,8 +5,7 @@ use diesel::prelude::*;
     1: migrations/<model_dir>/UP.sql
     2: models.rs Queryable and Insertable structs
     3: reqres.rs request, response structs
-    4: lib.rs response::build()
-  reqres.rs structs when updating models.
+    4: reqres.rs response::build()
 */
 
 #[derive(Queryable, Debug)]

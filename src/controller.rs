@@ -18,7 +18,7 @@ use crate::vendor;
 /// Protected: false
 #[get("/version")]
 pub async fn get_version() -> Custom<Json<reqres::XmrApiVersionResponse>> {
-    let res: reqres::XmrRpcVersionResponse = monero::get_xmr_version().await;
+    let res: reqres::XmrRpcVersionResponse = monero::get_version().await;
     let version: i32 = res.result.version;
     Custom(
         Status::Accepted,
@@ -53,7 +53,7 @@ pub async fn get_vendor(address: String, signature: String) -> Custom<Json<reqre
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
-    let m_vendor: models::Vendor = vendor::find_vendor(address).await;
+    let m_vendor: models::Vendor = vendor::find(address).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetVendorResponse::build(m_vendor)),
@@ -106,8 +106,8 @@ pub async fn update_vendor(
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
-    let v: models::Vendor = vendor::find_vendor(address).await;
-    let m_vendor: models::Vendor = vendor::modify_vendor(v.vid, data, update_type).await;
+    let v: models::Vendor = vendor::find(address).await;
+    let m_vendor: models::Vendor = vendor::modify(v.vid, data, update_type).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetVendorResponse::build(m_vendor)),
@@ -125,7 +125,7 @@ pub async fn create_product(
         let res: reqres::GetProductResponse = Default::default();
         return Custom(Status::Unauthorized, Json(res));
     }
-    let v: models::Vendor = vendor::find_vendor(address).await;
+    let v: models::Vendor = vendor::find(address).await;
     let m_product: models::Product = product::create(v.vid).await;
     Custom(
         Status::Accepted,
@@ -143,7 +143,7 @@ pub async fn get_vendor_products(
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
-    let m_vendor: models::Vendor = vendor::find_vendor(address).await;
+    let m_vendor: models::Vendor = vendor::find(address).await;
     let m_products: Vec<models::Product> = product::find_all(m_vendor.vid).await;
     Custom(
         Status::Accepted,
@@ -163,7 +163,7 @@ pub async fn update_product(
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
-    let v: models::Vendor = vendor::find_vendor(address).await;
+    let v: models::Vendor = vendor::find(address).await;
     let m_product: models::Product = product::modify(v.vid, data, update_type).await;
     Custom(
         Status::Accepted,

@@ -86,7 +86,7 @@ pub async fn verify_login(address: String, signature: String) -> Authorization {
 }
 
 /// Vendor lookup
-pub async fn find_vendor(address: String) -> Vendor {
+pub async fn find(address: String) -> Vendor {
     use self::schema::vendors::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     let results = vendors
@@ -109,7 +109,7 @@ pub async fn find_vendor(address: String) -> Vendor {
 }
 
 /// Update vendor info
-pub async fn modify_vendor(_id: String, data: String, update_type: i32) -> Vendor {
+pub async fn modify(_id: String, data: String, update_type: i32) -> Vendor {
     use self::schema::vendors::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     if update_type == VendorUpdateType::Active.value() {

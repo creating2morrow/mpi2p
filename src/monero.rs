@@ -44,7 +44,7 @@ fn get_rpc_creds() -> RpcLogin {
 }
 
 /// Performs rpc 'get_version' method
-pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
+pub async fn get_version() -> reqres::XmrRpcVersionResponse {
     let client = reqwest::Client::new();
     let host = get_rpc_host();
     let req = reqres::XmrRpcVersionRequest {
@@ -72,7 +72,7 @@ pub async fn get_xmr_version() -> reqres::XmrRpcVersionResponse {
 
 /// Helper function for checking xmr rpc online during app startup
 pub async fn check_rpc_connection() -> () {
-    let res: reqres::XmrRpcVersionResponse = get_xmr_version().await;
+    let res: reqres::XmrRpcVersionResponse = get_version().await;
     if res.result.version == 0 {
         logger::log(
             logger::LogLevel::ERROR,
