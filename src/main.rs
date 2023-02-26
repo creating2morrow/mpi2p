@@ -14,7 +14,7 @@ async fn rocket() -> _ {
     monero::check_rpc_connection().await;
     let env: String = utils::get_release_env().value();
     let dev: String = utils::ReleaseEnvironment::Development.value();
-    if env != dev { i2p::check_i2p_connection().await; }
+    if env != dev { i2p::check_connection().await; }
     logger::log(logger::LogLevel::INFO, &(env + " - mpi2p is online")).await;
     rocket::build()
         .mount("/", routes![controller::login])

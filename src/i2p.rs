@@ -18,7 +18,7 @@ impl I2pStatus {
 // START i2p connection verification
 /// TODO: create a tunnel for the server at initial startup
 /// if one does not exist. See https://github.com/i2p-zero/i2p-zero
-pub async fn check_i2p_connection() -> () {
+pub async fn check_connection() -> () {
     let client: reqwest::Client = reqwest::Client::new();
     let host: &str = "http://localhost:7657/tunnels";
     let tick: std::sync::mpsc::Receiver<()> = schedule_recv::periodic_ms(10000);

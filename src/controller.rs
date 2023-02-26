@@ -38,7 +38,7 @@ pub async fn get_customer(
         let res: reqres::GetCustomerResponse = Default::default();
         return Custom(Status::Unauthorized, Json(res));
     }
-    let m_customer: models::Customer = customer::find_customer(address).await;
+    let m_customer: models::Customer = customer::find(address).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetCustomerResponse::build(m_customer)),
@@ -67,7 +67,7 @@ pub async fn login(
     corv: String,
     signature: String,
 ) -> Custom<Json<reqres::GetAuthResponse>> {
-    let m_auth: models::Authorization = auth::get_login_auth(address, corv, signature).await;
+    let m_auth: models::Authorization = auth::get_login(address, corv, signature).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetAuthResponse::build(m_auth)),
@@ -86,8 +86,8 @@ pub async fn update_customer(
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
-    let c: models::Customer = customer::find_customer(address).await;
-    let m_customer: models::Customer = customer::modify_customer(c.cid, data, update_type).await;
+    let c: models::Customer = customer::find(address).await;
+    let m_customer: models::Customer = customer::modify(c.cid, data, update_type).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetCustomerResponse::build(m_customer)),
@@ -95,11 +95,10 @@ pub async fn update_customer(
 }
 
 /// Update vendor information
-#[patch("/<address>/<signature>/update/<id>/<data>/<update_type>")]
+#[patch("/<address>/<signature>/update/<data>/<update_type>")]
 pub async fn update_vendor(
     address: String,
     signature: String,
-    id: String,
     data: String,
     update_type: i32,
 ) -> Custom<Json<reqres::GetVendorResponse>> {
@@ -127,7 +126,7 @@ pub async fn create_product(
         return Custom(Status::Unauthorized, Json(res));
     }
     let v: models::Vendor = vendor::find_vendor(address).await;
-    let m_product: models::Product = product::create_new_product(v.vid).await;
+    let m_product: models::Product = product::create(v.vid).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetProductResponse::build(m_product)),
@@ -145,7 +144,7 @@ pub async fn get_vendor_products(
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
     let m_vendor: models::Vendor = vendor::find_vendor(address).await;
-    let m_products: Vec<models::Product> = product::find_vendor_products(m_vendor.vid).await;
+    let m_products: Vec<models::Product> = product::find_all(m_vendor.vid).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetVendorProductsResponse::build(m_products)),
@@ -165,7 +164,7 @@ pub async fn update_product(
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
     let v: models::Vendor = vendor::find_vendor(address).await;
-    let m_product: models::Product = product::modify_product(v.vid, data, update_type).await;
+    let m_product: models::Product = product::modify(v.vid, data, update_type).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetProductResponse::build(m_product)),
@@ -184,9 +183,9 @@ pub async fn initialize_order(
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
     // get the cid from the address after verification
-    let m_customer = customer::find_customer(address).await;
+    let m_customer = customer::find(address).await;
     let temp_pid = String::from(&pid);
-    let m_order: models::Order = order::create_new_order(m_customer.cid, temp_pid).await;
+    let m_order: models::Order = order::create(m_customer.cid, temp_pid).await;
     Custom(
         Status::Accepted,
         Json(reqres::InitializeOrderResponse::build(pid, m_order)),

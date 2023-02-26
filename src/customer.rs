@@ -9,7 +9,7 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
 /// Create a new customer
-async fn create_customer(
+async fn create(
     conn: &mut PgConnection,
     xmr_address: &str,
     name: &str,
@@ -30,7 +30,7 @@ async fn create_customer(
 }
 
 /// Lookup customer
-pub async fn find_customer(address: String) -> Customer {
+pub async fn find(address: String) -> Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     let results = customers
@@ -53,14 +53,14 @@ pub async fn find_customer(address: String) -> Customer {
 }
 
 /// Performs the signature verfication against stored auth
-pub async fn verify_customer_login(address: String, signature: String) -> Authorization {
+pub async fn verify_login(address: String, signature: String) -> Authorization {
     let connection = &mut utils::establish_pgdb_connection().await;
     use crate::schema::customers::dsl::*;
     let f_address = String::from(&address);
-    let f_auth: Authorization = auth::find_auth(f_address).await;
+    let f_auth: Authorization = auth::find(f_address).await;
     let data: String = String::from(&f_auth.rnd);
     if f_auth.xmr_address == String::from("") {
-        return auth::create_auth(connection, address).await;
+        return auth::create(connection, address).await;
     }
     let sig_address: String = monero::verify_signature(address, data, signature).await;
     if sig_address == utils::ApplicationErrors::LoginError.value() {
@@ -75,7 +75,7 @@ pub async fn verify_customer_login(address: String, signature: String) -> Author
                 return f_auth;
             } else {
                 logger::log(logger::LogLevel::INFO, "Creating new customer").await;
-                create_customer(connection, &sig_address, "", "").await;
+                create(connection, &sig_address, "", "").await;
                 return f_auth;
             }
         }
@@ -88,7 +88,7 @@ pub async fn verify_customer_login(address: String, signature: String) -> Author
 
 
 /// Update customer information
-pub async fn modify_customer(_id: String, data: String, update_type: i32) -> Customer {
+pub async fn modify(_id: String, data: String, update_type: i32) -> Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     if update_type == vendor::VendorUpdateType::Name.value() {

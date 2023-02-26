@@ -27,7 +27,7 @@ impl VendorUpdateType {
 }
 
 /// Create skeleton for vendor
-async fn create_vendor(
+async fn create(
     conn: &mut PgConnection,
     v_xmr_address: &str,
     v_name: &str,
@@ -52,14 +52,14 @@ async fn create_vendor(
 }
 
 /// Verifies vendor signature against stored auth
-pub async fn verify_vendor_login(address: String, signature: String) -> Authorization {
+pub async fn verify_login(address: String, signature: String) -> Authorization {
     use self::schema::vendors::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     let f_address = String::from(&address);
-    let f_auth: Authorization = auth::find_auth(f_address).await;
+    let f_auth: Authorization = auth::find(f_address).await;
     let data: String = String::from(&f_auth.rnd);
     if f_auth.xmr_address == String::from("") {
-        return auth::create_auth(connection, address).await;
+        return auth::create(connection, address).await;
     }
     let sig_address: String = monero::verify_signature(address, data, signature).await;
     if sig_address == utils::ApplicationErrors::LoginError.value() {
@@ -74,7 +74,7 @@ pub async fn verify_vendor_login(address: String, signature: String) -> Authoriz
                 return f_auth;
             } else {
                 logger::log(logger::LogLevel::INFO, "Creating new vendor").await;
-                create_vendor(connection, &sig_address, "", "", "", &false).await;
+                create(connection, &sig_address, "", "", "", &false).await;
                 return f_auth;
             }
         }

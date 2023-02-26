@@ -11,16 +11,16 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 
 /// Determine customer or vendor login
-pub async fn get_login_auth(address: String, corv: String, signature: String) -> Authorization {
+pub async fn get_login(address: String, corv: String, signature: String) -> Authorization {
     if corv == utils::LoginType::Customer.value() {
-        customer::verify_customer_login(address, signature).await
+        customer::verify_login(address, signature).await
     } else {
-        vendor::verify_vendor_login(address, signature).await
+        vendor::verify_login(address, signature).await
     }
 }
 
 /// Create authorization data to sign and expiration
-pub async fn create_auth(conn: &mut PgConnection, address: String) -> Authorization {
+pub async fn create(conn: &mut PgConnection, address: String) -> Authorization {
     use crate::schema::authorizations;
     let aid: String = utils::generate_rnd();
     let rnd: String = utils::generate_rnd();
@@ -38,7 +38,7 @@ pub async fn create_auth(conn: &mut PgConnection, address: String) -> Authorizat
 }
 
 /// Authorization lookup for recurring requests
-pub async fn find_auth(address: String) -> Authorization {
+pub async fn find(address: String) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     let results = authorizations
@@ -61,7 +61,7 @@ pub async fn find_auth(address: String) -> Authorization {
 }
 
 /// Update new authorization creation time
-async fn update_auth_expiration(_id: &str) -> Authorization {
+async fn update_expiration(_id: &str) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     logger::log(logger::LogLevel::INFO, "Modify auth expiration.").await;
@@ -76,7 +76,7 @@ async fn update_auth_expiration(_id: &str) -> Authorization {
 }
 
 /// Update auth data to sign
-async fn update_auth_data(_id: &str) -> Authorization {
+async fn update_data(_id: &str) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     logger::log(logger::LogLevel::INFO, "Modify auth data.").await;
@@ -96,14 +96,14 @@ async fn update_auth_data(_id: &str) -> Authorization {
 /// migrate to async from_request impl
 pub async fn verify_access(address: &str, signature: &str) -> bool {
     // look up auth for address
-    let f_auth: Authorization = find_auth(String::from(address)).await;
+    let f_auth: Authorization = find(String::from(address)).await;
     if f_auth.xmr_address != String::from("") {
         // check expiration, generate new data to sign if necessary
         let now: i64 = chrono::offset::Utc::now().timestamp();
         let expiration = get_auth_expiration();
         if now > f_auth.created + expiration {
-            update_auth_expiration(&f_auth.aid).await;
-            update_auth_data(&f_auth.aid).await;
+            update_expiration(&f_auth.aid).await;
+            update_data(&f_auth.aid).await;
             return false;
         }
     }

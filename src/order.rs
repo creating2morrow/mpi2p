@@ -47,7 +47,7 @@ pub enum OrderUpdateType {
 }
 
 /// Create a skeleton for order
-pub async fn create_new_order(cid: String, pid: String) -> Order {
+pub async fn create(cid: String, pid: String) -> Order {
     use crate::schema::orders;
     let connection = &mut utils::establish_pgdb_connection().await;
     let ts = chrono::offset::Utc::now().timestamp();

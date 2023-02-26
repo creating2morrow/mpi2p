@@ -24,7 +24,7 @@ impl ProductUpdateType {
 }
 
 /// Create a skeleton for the product
-pub async fn create_new_product(v_id: String) -> Product {
+pub async fn create(v_id: String) -> Product {
     use crate::schema::products;
     let connection = &mut utils::establish_pgdb_connection().await;
     let pid: String = utils::generate_rnd();
@@ -43,7 +43,7 @@ pub async fn create_new_product(v_id: String) -> Product {
         .expect("Error saving new product")
 }
 
-pub async fn modify_product(_id: String, data: String, update_type: i32) -> Product {
+pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
     use self::schema::products::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     // TODO: this isn't right. The product should automatically
@@ -93,7 +93,7 @@ pub async fn modify_product(_id: String, data: String, update_type: i32) -> Prod
     Default::default()
 }
 
-pub async fn find_vendor_products(_v_id: String) -> Vec<Product> {
+pub async fn find_all(_v_id: String) -> Vec<Product> {
     use self::schema::products::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     let results = products
