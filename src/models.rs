@@ -99,6 +99,7 @@ pub struct Order {
     pub o_vend_kex_1: String,
     pub o_vend_kex_2: String,
     pub o_vend_kex_3: String,
+    pub o_vend_msig_info: String,
 }
 
 impl Default for Order {
@@ -126,6 +127,7 @@ impl Default for Order {
             o_vend_kex_1: String::from(""),
             o_vend_kex_2: String::from(""),
             o_vend_kex_3: String::from(""),
+            o_vend_msig_info: String::from(""),
         }
     }
 }
@@ -217,4 +219,5 @@ pub struct NewOrder<'a> {
     pub o_vend_kex_1: &'a str,
     pub o_vend_kex_2: &'a str,
     pub o_vend_kex_3: &'a str,
+    pub o_vend_msig_info: &'a str,
 }

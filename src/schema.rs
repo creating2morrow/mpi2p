@@ -42,6 +42,7 @@ diesel::table! {
         o_vend_kex_1 -> Varchar,
         o_vend_kex_2 -> Varchar,
         o_vend_kex_3 -> Varchar,
+        o_vend_msig_info -> Varchar,
     }
 }
 

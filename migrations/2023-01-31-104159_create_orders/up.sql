@@ -27,5 +27,6 @@ CREATE TABLE orders (
   o_quantity BIGINT NOT NULL,
   o_vend_kex_1 VARCHAR NOT NULL,
   o_vend_kex_2 VARCHAR NOT NULL,
-  o_vend_kex_3 VARCHAR NOT NULL
+  o_vend_kex_3 VARCHAR NOT NULL,
+  o_vend_msig_info VARCHAR NOT NULL
 )
