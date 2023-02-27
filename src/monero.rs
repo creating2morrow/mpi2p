@@ -57,6 +57,8 @@ pub async fn get_version() -> reqres::XmrRpcVersionResponse {
     .send_with_digest_auth(&login.username, &login.credential).await {
         Ok(response) => {
             let res = response.json::<reqres::XmrRpcVersionResponse>().await;
+            logger::log(logger::LogLevel::DEBUG,
+                &format!("get version response: {:?}", res)).await;
             match res {
                 Ok(res) => res,
                 _ => reqres::XmrRpcVersionResponse {
@@ -76,7 +78,7 @@ pub async fn check_rpc_connection() -> () {
     if res.result.version == 0 {
         logger::log(
             logger::LogLevel::ERROR,
-            "Failed to connect to monero-wallet-rpc"
+            "failed to connect to monero-wallet-rpc"
         ).await;
     }
 }
@@ -85,7 +87,7 @@ pub async fn check_rpc_connection() -> () {
 pub async fn verify_signature(address: String, data: String, signature: String) -> String {
     logger::log(
         logger::LogLevel::INFO,
-        "Signature verification in progress.",
+        "signature verification in progress",
     )
     .await;
     let client = reqwest::Client::new();
@@ -106,6 +108,8 @@ pub async fn verify_signature(address: String, data: String, signature: String) 
     .send_with_digest_auth(&login.username, &login.credential).await {
         Ok(response) => {
             let res = response.json::<reqres::XmrRpcVerifyResponse>().await;
+            logger::log(logger::LogLevel::DEBUG,
+                &format!("verify response: {:?}", res)).await;
             match res {
                 Ok(res) => {
                     if res.result.good {

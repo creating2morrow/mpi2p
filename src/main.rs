@@ -8,7 +8,7 @@ mod tests;
 
 #[launch]
 async fn rocket() -> _ {
-    logger::log(logger::LogLevel::INFO, &("mpi2p is starting up")).await;
+    logger::log(logger::LogLevel::INFO, "mpi2p is starting up").await;
     // postgres required to be up at boot time
     utils::establish_pgdb_connection().await;
     monero::check_rpc_connection().await;

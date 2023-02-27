@@ -37,10 +37,12 @@ pub async fn create(v_id: String) -> Product {
         p_price: &0,
         qty: &0,
     };
+    logger::log(logger::LogLevel::DEBUG,
+        &format!("insert product: {:?}", new_product)).await;
     diesel::insert_into(products::table)
         .values(&new_product)
         .get_result(connection)
-        .expect("Error saving new product")
+        .expect("error saving new product")
 }
 
 pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
@@ -50,7 +52,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
     // get updated based on the qty. Qty should be updated according
     // to settled orders
     if update_type == UpdateType::InStock.value() {
-        logger::log(logger::LogLevel::INFO, "Modify product active status.").await;
+        logger::log(logger::LogLevel::INFO, "modify product active status").await;
         let m = diesel::update(products.find(_id))
             .set(in_stock.eq(true))
             .get_result::<Product>(connection);
@@ -59,7 +61,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Description.value() {
-        logger::log(logger::LogLevel::INFO, "Modify product description.").await;
+        logger::log(logger::LogLevel::INFO, "modify product description").await;
         let m = diesel::update(products.find(_id))
             .set(p_description.eq(data))
             .get_result::<Product>(connection);
@@ -68,7 +70,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Name.value() {
-        logger::log(logger::LogLevel::INFO, "Modify product name.").await;
+        logger::log(logger::LogLevel::INFO, "modify product name").await;
         let m = diesel::update(products.find(_id))
             .set(p_name.eq(data))
             .get_result::<Product>(connection);
@@ -77,7 +79,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Price.value() {
-        logger::log(logger::LogLevel::INFO, "Modify product price.").await;
+        logger::log(logger::LogLevel::INFO, "modify product price").await;
         let price_data = match data.parse::<i64>() {
             Ok(n) => n,
             Err(_e) => 0,
@@ -101,11 +103,11 @@ pub async fn find_all(_v_id: String) -> Vec<Product> {
         .load::<Product>(connection);
     match results {
         Ok(r) => {
-            logger::log(logger::LogLevel::INFO, "Found vendor products.").await;
+            logger::log(logger::LogLevel::INFO, "found vendor products").await;
             r
         }
         _ => {
-            logger::log(logger::LogLevel::ERROR, "Error finding vendor products.").await;
+            logger::log(logger::LogLevel::ERROR, "error finding vendor products").await;
             let v: Vec<Product> = Vec::new();
             v
         }

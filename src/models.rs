@@ -75,7 +75,7 @@ impl Default for Product {
     }
 }
 
-#[derive(Queryable)]
+#[derive(Queryable, Debug)]
 pub struct Order {
     pub orid: String,
     pub c_id: String,
@@ -132,7 +132,7 @@ impl Default for Order {
     }
 }
 
-#[derive(Queryable)]
+#[derive(Queryable, Debug)]
 pub struct Authorization {
     pub aid: String,
     pub created: i64,
@@ -153,7 +153,7 @@ impl Default for Authorization {
 
 use crate::schema;
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = schema::customers)]
 pub struct NewCustomer<'a> {
     pub cid: &'a str,
@@ -162,7 +162,7 @@ pub struct NewCustomer<'a> {
     pub c_pgp: &'a str,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = schema::vendors)]
 pub struct NewVendor<'a> {
     pub vid: &'a str,
@@ -173,7 +173,7 @@ pub struct NewVendor<'a> {
     pub active: &'a bool,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = schema::products)]
 pub struct NewProduct<'a> {
     pub pid: &'a str,
@@ -185,7 +185,7 @@ pub struct NewProduct<'a> {
     pub qty: &'a i64,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = schema::authorizations)]
 pub struct NewAuthorization<'a> {
     pub aid: &'a str,
@@ -194,7 +194,7 @@ pub struct NewAuthorization<'a> {
     pub xmr_address: &'a str,
 }
 
-#[derive(Insertable)]
+#[derive(Insertable, Debug)]
 #[diesel(table_name = schema::orders)]
 pub struct NewOrder<'a> {
     pub orid: &'a str,

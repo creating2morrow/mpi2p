@@ -40,19 +40,19 @@ pub async fn check_connection() -> () {
                         let mut split2: Vec<String> = v2.map(|s| String::from(s)).collect();
                         let status: String = split2.remove(0);
                         if status == I2pStatus::Accept.value() {
-                            log(LogLevel::INFO, "I2P is currently accepting tunnels.").await;
+                            log(LogLevel::INFO, "I2P is currently accepting tunnels").await;
                             break;
                         } else if status == I2pStatus::Reject.value() {
-                            log(LogLevel::INFO, "I2P is currently rejecting tunnels.").await;
+                            log(LogLevel::INFO, "I2P is currently rejecting tunnels").await;
                         } else {
-                            log(LogLevel::INFO, "I2P is offline.").await;
+                            log(LogLevel::INFO, "I2P is offline").await;
                         }
                     }
-                    _ => log(LogLevel::ERROR, "I2P status check failure.").await,
+                    _ => log(LogLevel::ERROR, "I2P status check failure").await,
                 }
             }
             Err(_e) => {
-                log(LogLevel::ERROR, "I2P status check failure.").await;
+                log(LogLevel::ERROR, "I2P status check failure").await;
             }
         }
     }

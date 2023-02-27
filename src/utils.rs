@@ -54,7 +54,7 @@ pub async fn establish_pgdb_connection() -> PgConnection {
     let args = args::Args::parse();
     let db_string: String = String::from(args.postgres_db_url);
     PgConnection::establish(&db_string)
-        .unwrap_or_else(|_| panic!("Error connecting to {}", db_string))
+        .unwrap_or_else(|_| panic!("error connecting to {}", db_string))
 }
 
 /// Random data generation for authorization signing
