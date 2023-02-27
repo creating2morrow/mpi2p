@@ -1,33 +1,32 @@
 use crate::models::*;
-use crate::logger;
 use crate::schema;
 use crate::utils;
 use diesel::prelude::*;
+use log::{debug, info};
 
-#[derive(Debug)]
-pub enum StatusType {
-    Delivered,
-    Error,
-    MultisigMissing,
-    MulitsigComplete,
-    Signed,
-    Shipped,
-    Submitted,
-}
+// enum StatusType {
+//     Delivered,
+//     Error,
+//     MultisigMissing,
+//     MulitsigComplete,
+//     Signed,
+//     Shipped,
+//     Submitted,
+// }
 
-impl StatusType {
-    pub fn value(&self) -> i32 {
-        match *self {
-            StatusType::Delivered => 0,
-            StatusType::Error => 1,
-            StatusType::MultisigMissing => 2,
-            StatusType::MulitsigComplete => 3,
-            StatusType::Signed => 4,
-            StatusType::Shipped => 5,
-            StatusType::Submitted => 6,
-        }
-    }
-}
+// impl StatusType {
+//     pub fn value(&self) -> i32 {
+//         match *self {
+//             StatusType::Delivered => 0,
+//             StatusType::Error => 1,
+//             StatusType::MultisigMissing => 2,
+//             StatusType::MulitsigComplete => 3,
+//             StatusType::Signed => 4,
+//             StatusType::Shipped => 5,
+//             StatusType::Submitted => 6,
+//         }
+//     }
+// }
 
 enum UpdateType {
     CustomerKex1,
@@ -94,7 +93,7 @@ pub async fn create(cid: String, pid: String) -> Order {
         o_vend_kex_3: "",
         o_vend_msig_info: "",
     };
-    logger::Log::debug(&format!("insert order: {:?}", new_order)).await;
+    debug!("insert order: {:?}", new_order);
     diesel::insert_into(orders::table)
         .values(&new_order)
         .get_result(connection)
@@ -108,7 +107,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
     let connection = &mut utils::establish_pgdb_connection().await;
     // this else if chain is awful, TODO: refactor
     if update_type == UpdateType::CustomerKex1.value() {
-        logger::Log::info("modify order customer kex 1").await;
+        info!("modify order customer kex 1");
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_1.eq(data))
             .get_result::<Order>(connection);
@@ -117,7 +116,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::CustomerKex2.value() {
-        logger::Log::info("modify customer kex 2").await;
+        info!("modify customer kex 2");
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_2.eq(data))
             .get_result::<Order>(connection);
@@ -126,7 +125,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::CustomerKex3.value() {
-        logger::Log::info("modify customer kex 3").await;
+        info!("modify customer kex 3");
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_3.eq(data))
             .get_result::<Order>(connection);
@@ -135,7 +134,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::CustomerMultisigInfo.value() {
-        logger::Log::info("modify customer multisig info").await;
+        info!("modify customer multisig info");
         let m = diesel::update(orders.find(_id))
             .set(o_cust_msig_info.eq(data))
             .get_result::<Order>(connection);
@@ -144,7 +143,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Deliver.value() {
-        logger::Log::info("modify devliver date").await;
+        info!("modify devliver date");
         let deliver_date = match data.parse::<i64>() {
             Ok(n) => n,
             Err(_e) => 0,
@@ -157,7 +156,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Hash.value() {
-        logger::Log::info("modify order hash").await;
+        info!("modify order hash");
         let m = diesel::update(orders.find(_id))
             .set(o_hash.eq(data))
             .get_result::<Order>(connection);
@@ -166,7 +165,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Ship.value() {
-        logger::Log::info("modify order ship date").await;
+        info!("modify order ship date");
         let ship_date = match data.parse::<i64>() {
             Ok(n) => n,
             Err(_e) => 0,
@@ -179,7 +178,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::VendorKex1.value() {
-        logger::Log::info("modify order customer kex 1").await;
+        info!("modify order customer kex 1");
         let m = diesel::update(orders.find(_id))
             .set(o_vend_kex_1.eq(data))
             .get_result::<Order>(connection);
@@ -188,7 +187,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::VendorKex2.value() {
-        logger::Log::info("modify vendor kex 2").await;
+        info!("modify vendor kex 2");
         let m = diesel::update(orders.find(_id))
             .set(o_vend_kex_2.eq(data))
             .get_result::<Order>(connection);
@@ -197,7 +196,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::VendorKex3.value() {
-        logger::Log::info("modify vendor kex 3").await;
+        info!("modify vendor kex 3");
         let m = diesel::update(orders.find(_id))
             .set(o_vend_kex_3.eq(data))
             .get_result::<Order>(connection);
@@ -206,7 +205,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::VendorMultisigInfo.value() {
-        logger::Log::info("modify vendor multisig info").await;
+        info!("modify vendor multisig info");
         let m = diesel::update(orders.find(_id))
             .set(o_vend_msig_info.eq(data))
             .get_result::<Order>(connection);
@@ -215,7 +214,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Quantity.value() {
-        logger::Log::info("modify vendor kex 3").await;
+        info!("modify vendor kex 3");
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_3.eq(data))
             .get_result::<Order>(connection);

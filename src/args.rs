@@ -12,14 +12,6 @@ pub struct Args {
         default_value = "dev"
     )]
     pub release_env: String,
-    /// Log Level
-    #[arg(
-        short,
-        long,
-        help = "Comma separated log level e.g. <WARN,INFO...>",
-        default_value = "ERROR,INFO"
-    )]
-    pub log_level: String,
     /// Monero RPC HOST
     #[arg(
         short,

@@ -50,7 +50,7 @@ i2p marketplace api standards bootstrap
     * `diesel migration run`
     * `rm src/schema.rs && diesel print-schema --database-url <db_url_string> > src/schema.rs` 
 * `main.rs` - controllers / app startup are here
-* `cargo run -- --monero-rpc-username user --monero-rpc-cred pass`
+* `RUST_LOG=debug cargo run -- --monero-rpc-username user --monero-rpc-cred pass`
 * hack away
 
 ## Production

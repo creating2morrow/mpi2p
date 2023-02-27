@@ -1,6 +1,7 @@
 #[macro_use]
 extern crate rocket;
 use mpi2p::*;
+use log::info;
 #[cfg(test)]
 mod tests;
 
@@ -8,14 +9,15 @@ mod tests;
 
 #[launch]
 async fn rocket() -> _ {
-    logger::Log::info("mpi2p is starting up").await;
+    env_logger::init();
+    info!("mpi2p is starting up");
     // postgres required to be up at boot time
     utils::establish_pgdb_connection().await;
     monero::check_rpc_connection().await;
     let env: String = utils::get_release_env().value();
     let dev: String = utils::ReleaseEnvironment::Development.value();
     if env != dev { i2p::check_connection().await; }
-    logger::Log::info(&(env + " - mpi2p is online")).await;
+    info!("{} - mpi2p is online", env);
     rocket::build()
         .mount("/", routes![controller::login])
         .mount("/customer", routes![controller::get_customer, controller::update_customer])

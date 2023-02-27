@@ -3,7 +3,6 @@ pub mod auth;       // Authorization repo/service layer
 pub mod controller; // HTTP entry point
 pub mod customer;   // Customer repo/service layer
 pub mod i2p;        // I2P repo/service layer
-pub mod logger;     // Logging
 pub mod models;     // Models for database query/insertion
 pub mod monero;     // Monero-wallet-rpc interface
 pub mod order;      // Order repo/service layer

@@ -1,6 +1,5 @@
 use crate::args;
 use crate::customer;
-use crate::logger;
 use crate::models::*;
 use crate::monero;
 use crate::schema;
@@ -9,6 +8,7 @@ use crate::vendor;
 use clap::Parser;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
+use log::{debug, error, info};
 
 /// Determine customer or vendor login
 pub async fn get_login(address: String, corv: String, signature: String) -> Authorization {
@@ -31,7 +31,7 @@ pub async fn create(conn: &mut PgConnection, address: String) -> Authorization {
         rnd: &rnd,
         xmr_address: &address,
     };
-    logger::Log::debug(&format!("insert auth: {:?}", new_auth)).await;
+    debug!("insert auth: {:?}", new_auth);
     diesel::insert_into(authorizations::table)
         .values(&new_auth)
         .get_result(conn)
@@ -48,14 +48,14 @@ pub async fn find(address: String) -> Authorization {
     match results {
         Ok(mut r) => {
             if &r.len() > &0 {
-                logger::Log::info("found auth").await;
+                info!("found auth");
                 r.remove(0)
             } else {
                 Default::default()
             }
         }
         _ => {
-            logger::Log::error("error finding auth").await;
+            error!("error finding auth");
             Default::default()
         }
     }
@@ -65,7 +65,7 @@ pub async fn find(address: String) -> Authorization {
 async fn update_expiration(_id: &str) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
-    logger::Log::info("modify auth expiration").await;
+    info!("modify auth expiration");
     let time: i64 = chrono::offset::Utc::now().timestamp();
     let m = diesel::update(authorizations.find(_id))
         .set(created.eq(time))
@@ -80,7 +80,7 @@ async fn update_expiration(_id: &str) -> Authorization {
 async fn update_data(_id: &str) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
-    logger::Log::info( "modify auth data").await;
+    info!( "modify auth data");
     let data: String = utils::generate_rnd();
     let m = diesel::update(authorizations.find(_id))
         .set(rnd.eq(data))
@@ -115,7 +115,7 @@ pub async fn verify_access(address: &str, signature: &str) -> bool {
     if sig_address == utils::ApplicationErrors::LoginError.value() {
         return false;
     }
-    logger::Log::info(&format!("auth verified")).await;
+    info!("auth verified");
     return true;
 }
 

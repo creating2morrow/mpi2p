@@ -1,13 +1,12 @@
 // Customer repo/service layer
 use crate::auth;
-use crate::logger;
 use crate::models::*;
 use crate::monero;
 use crate::schema;
 use crate::utils;
 use diesel::pg::PgConnection;
 use diesel::prelude::*;
-
+use log::{debug, error, info};
 enum UpdateType {
     Name,
     Pgp,
@@ -37,7 +36,7 @@ async fn create(
         c_name: name,
         c_pgp: pgp,
     };
-    logger::Log::debug(&format!("insert customer: {:?}", new_customer)).await;
+    debug!("insert customer: {:?}", new_customer);
     diesel::insert_into(customers::table)
         .values(&new_customer)
         .get_result(conn)
@@ -53,7 +52,7 @@ pub async fn find(address: String) -> Customer {
         .load::<Customer>(connection);
     match results {
         Ok(mut r) => {
-            logger::Log::info("found customer").await;
+            info!("found customer");
             if &r.len() > &0 {
                 r.remove(0)
             } else {
@@ -61,7 +60,7 @@ pub async fn find(address: String) -> Customer {
             }
         }
         _ => {
-            logger::Log::error("error finding customer").await;
+            error!("error finding customer");
             Default::default()
         }
     }
@@ -89,13 +88,13 @@ pub async fn verify_login(address: String, signature: String) -> Authorization {
             if &r.len() > &0 {
                 return f_auth;
             } else {
-                logger::Log::info("creating new customer").await;
+                info!("creating new customer");
                 create(connection, &sig_address, "", "").await;
                 return f_auth;
             }
         }
         _ => {
-            logger::Log::error("error creating customer").await;
+            error!("error creating customer");
             Default::default()
         }
     }
@@ -107,7 +106,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     if update_type == UpdateType::Name.value() {
-        logger::Log::info("modify customer name").await;
+        info!("modify customer name");
         let m = diesel::update(customers.find(_id))
             .set(c_name.eq(data))
             .get_result::<Customer>(connection);
@@ -116,7 +115,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Customer {
             Err(_e) => Default::default(),
         }
     } else if update_type == UpdateType::Pgp.value() {
-        logger::Log::info("modify customer pgp").await;
+        info!("modify customer pgp");
         let m = diesel::update(customers.find(_id))
             .set(c_pgp.eq(data))
             .get_result::<Customer>(connection);

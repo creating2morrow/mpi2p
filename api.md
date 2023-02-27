@@ -24,16 +24,20 @@ curl http://127.0.0.1:8000/login/<customer|vendor>/<XMR_ADDRESS>/<SIGNATURE>
 # <update_type> - Enum => 0 - active, 1 - description, 2 - name, 3 - pgp
 curl -X PATCH http://127.0.0.1:8000/<customer|vendor>/<XMR_ADDRESS>/<SIGNATURE>/update/<data>/<update_type>
 
-# get
+# [GET]
 # create a new product
 curl -iv http://127.0.0.1:8000/product/<XMR_ADDRESS>/<SIGNATURE>/create
 
-# get
+# [GET]
 # return all products for a vendor
 curl -iv http://127.0.0.1:8000/products/<XMR_ADDRESS>/<SIGNATURE>
 
-# update product
+# [PATCH] update product
 # <pid> - i32
 # <data> - String
 # <update_type> - Enum => 0 - in_stock, 1 - description, 2 - name, 3 - price 4 - qty
 curl -X PATCH http://127.0.0.1:8000/product/<XMR_ADDRESS>/<SIGNATURE>/update/<pid>/<data>/<update_type>
+
+# [GET]
+# intialize an order for a customer
+curl -iv http://127.0.0.1:8000/order/<XMR_ADDRESS>/<SIGNATURE>/create/<pid>

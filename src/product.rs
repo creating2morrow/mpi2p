@@ -1,8 +1,8 @@
-use crate::logger;
 use crate::models::*;
 use crate::schema;
 use crate::utils;
 use diesel::prelude::*;
+use log::{debug, error, info};
 
 #[derive(Debug)]
 enum UpdateType {
@@ -39,7 +39,7 @@ pub async fn create(v_id: String) -> Product {
         p_price: &0,
         qty: &0,
     };
-    logger::Log::debug(&format!("insert product: {:?}", new_product)).await;
+    debug!("insert product: {:?}", new_product);
     diesel::insert_into(products::table)
         .values(&new_product)
         .get_result(connection)
@@ -53,7 +53,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
     // get updated based on the qty. Qty should be updated according
     // to settled orders
     if update_type == UpdateType::InStock.value() {
-        logger::Log::info("modify product active status").await;
+        info!("modify product active status");
         let m = diesel::update(products.find(_id))
             .set(in_stock.eq(true))
             .get_result::<Product>(connection);
@@ -62,7 +62,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Description.value() {
-        logger::Log::info("modify product description").await;
+        info!("modify product description");
         let m = diesel::update(products.find(_id))
             .set(p_description.eq(data))
             .get_result::<Product>(connection);
@@ -71,7 +71,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Name.value() {
-        logger::Log::info("modify product name").await;
+        info!("modify product name");
         let m = diesel::update(products.find(_id))
             .set(p_name.eq(data))
             .get_result::<Product>(connection);
@@ -80,7 +80,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Price.value() {
-        logger::Log::info("modify product price").await;
+        info!("modify product price");
         let price_data = match data.parse::<i64>() {
             Ok(n) => n,
             Err(_e) => 0,
@@ -93,7 +93,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Quantity.value() {
-        logger::Log::info("modify product quantity").await;
+        info!("modify product quantity");
         let amt = match data.parse::<i64>() {
             Ok(n) => n,
             Err(_e) => 0,
@@ -117,11 +117,11 @@ pub async fn find_all(_v_id: String) -> Vec<Product> {
         .load::<Product>(connection);
     match results {
         Ok(r) => {
-            logger::Log::info("found vendor products").await;
+            info!("found vendor products");
             r
         }
         _ => {
-            logger::Log::error("error finding vendor products").await;
+            error!("error finding vendor products");
             let v: Vec<Product> = Vec::new();
             v
         }
