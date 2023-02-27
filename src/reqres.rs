@@ -54,7 +54,6 @@ pub struct XmrRpcVersionRequest {
 #[serde(crate = "rocket::serde")]
 pub struct GetCustomerResponse {
     pub address: String,
-    pub cid: String,
     pub name: String,
     pub pgp: String,
 }
@@ -63,7 +62,6 @@ impl Default for GetCustomerResponse {
     fn default() -> Self {
         GetCustomerResponse {
             address: String::from(""),
-            cid: String::from(""),
             name: String::from(""),
             pgp: String::from(""),
         }
@@ -76,7 +74,6 @@ pub struct GetVendorResponse {
     pub active: bool,
     pub address: String,
     pub description: String,
-    pub vid: String,
     pub name: String,
     pub pgp: String,
 }
@@ -87,7 +84,6 @@ impl Default for GetVendorResponse {
             active: false,
             address: String::from(""),
             description: String::from(""),
-            vid: String::from(""),
             name: String::from(""),
             pgp: String::from(""),
         }
@@ -98,7 +94,6 @@ impl Default for GetVendorResponse {
 #[serde(crate = "rocket::serde")]
 pub struct GetProductResponse {
     pub pid: String,
-    pub v_id: String,
     pub in_stock: bool,
     pub description: String,
     pub name: String,
@@ -110,7 +105,6 @@ impl Default for GetProductResponse {
     fn default() -> Self {
         GetProductResponse {
             pid: String::from(""),
-            v_id: String::from(""),
             in_stock: false,
             description: String::from(""),
             name: String::from(""),
@@ -138,7 +132,6 @@ impl Default for GetVendorProductsResponse {
 #[serde(crate = "rocket::serde")]
 pub struct GetAuthResponse {
     pub address: String,
-    pub aid: String,
     pub created: i64,
     pub data: String,
 }
@@ -147,7 +140,6 @@ impl Default for GetAuthResponse {
     fn default() -> Self {
         GetAuthResponse {
             address: String::from(""),
-            aid: String::from(""),
             created: 0,
             data: String::from(""),
         }
@@ -158,7 +150,6 @@ impl Default for GetAuthResponse {
 #[serde(crate = "rocket::serde")]
 pub struct InitializeOrderResponse {
     pub orid: String,
-    pub cid: String,
     pub pid: String,
     pub xmr_address: String,
     pub cust_msig_info: String,
@@ -186,7 +177,6 @@ impl Default for InitializeOrderResponse {
     fn default() -> Self {
         InitializeOrderResponse {
             orid: String::from(""),
-            cid: String::from(""),
             pid: String::from(""),
             xmr_address: String::from(""),
             cust_msig_info: String::from(""),
@@ -216,7 +206,6 @@ impl Default for InitializeOrderResponse {
 impl GetCustomerResponse {
     pub fn build(m_customer: models::Customer) -> Self {
         GetCustomerResponse {
-            cid: m_customer.cid,
             address: m_customer.c_xmr_address,
             name: m_customer.c_name,
             pgp: m_customer.c_pgp,
@@ -227,7 +216,6 @@ impl GetCustomerResponse {
 impl GetVendorResponse {
     pub fn build(m_vendor: models::Vendor) -> Self {
         GetVendorResponse {
-            vid: m_vendor.vid,
             active: m_vendor.active,
             address: m_vendor.v_xmr_address,
             description: m_vendor.v_description,
@@ -241,7 +229,6 @@ impl GetAuthResponse {
     pub fn build(m_auth: models::Authorization) -> Self {
         GetAuthResponse {
             address: m_auth.xmr_address,
-            aid: m_auth.aid,
             data: m_auth.rnd,
             created: m_auth.created,
         }
@@ -252,7 +239,6 @@ impl GetProductResponse {
     pub fn build(m_product: models::Product) -> Self {
         GetProductResponse {
             pid: m_product.pid,
-            v_id: m_product.v_id,
             in_stock: m_product.in_stock,
             description: m_product.p_description,
             name: m_product.p_name,
@@ -268,7 +254,6 @@ impl GetVendorProductsResponse {
         for m in m_products {
             let p_res: GetProductResponse = GetProductResponse {
                 pid: m.pid,
-                v_id: m.v_id,
                 in_stock: m.in_stock,
                 description: m.p_description,
                 name: m.p_name,
@@ -285,7 +270,6 @@ impl InitializeOrderResponse {
     pub fn build(pid: String, m_order: models::Order) -> Self {
         InitializeOrderResponse {
             orid: m_order.orid,
-            cid: m_order.c_id,
             pid,
             xmr_address: m_order.o_xmr_address,
             cust_msig_info: m_order.o_cust_msig_info,
