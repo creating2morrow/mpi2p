@@ -1,4 +1,4 @@
-use crate::logger::{log, LogLevel};
+use crate::logger;
 
 #[derive(Debug)]
 pub enum I2pStatus {
@@ -40,19 +40,19 @@ pub async fn check_connection() -> () {
                         let mut split2: Vec<String> = v2.map(|s| String::from(s)).collect();
                         let status: String = split2.remove(0);
                         if status == I2pStatus::Accept.value() {
-                            log(LogLevel::INFO, "I2P is currently accepting tunnels").await;
+                            logger::Log::info("I2P is currently accepting tunnels").await;
                             break;
                         } else if status == I2pStatus::Reject.value() {
-                            log(LogLevel::INFO, "I2P is currently rejecting tunnels").await;
+                            logger::Log::info("I2P is currently rejecting tunnels").await;
                         } else {
-                            log(LogLevel::INFO, "I2P is offline").await;
+                            logger::Log::info("I2P is offline").await;
                         }
                     }
-                    _ => log(LogLevel::ERROR, "I2P status check failure").await,
+                    _ => logger::Log::error("I2P status check failure").await,
                 }
             }
-            Err(_e) => {
-                log(LogLevel::ERROR, "I2P status check failure").await;
+            Err(e) => {
+                logger::Log::error(&e.to_string()).await;
             }
         }
     }

@@ -31,8 +31,7 @@ pub async fn create(conn: &mut PgConnection, address: String) -> Authorization {
         rnd: &rnd,
         xmr_address: &address,
     };
-    logger::log(logger::LogLevel::DEBUG,
-        &format!("insert auth: {:?}", new_auth)).await;
+    logger::Log::debug(&format!("insert auth: {:?}", new_auth)).await;
     diesel::insert_into(authorizations::table)
         .values(&new_auth)
         .get_result(conn)
@@ -49,14 +48,14 @@ pub async fn find(address: String) -> Authorization {
     match results {
         Ok(mut r) => {
             if &r.len() > &0 {
-                logger::log(logger::LogLevel::INFO, "found auth").await;
+                logger::Log::info("found auth").await;
                 r.remove(0)
             } else {
                 Default::default()
             }
         }
         _ => {
-            logger::log(logger::LogLevel::ERROR, "error finding auth").await;
+            logger::Log::error("error finding auth").await;
             Default::default()
         }
     }
@@ -66,7 +65,7 @@ pub async fn find(address: String) -> Authorization {
 async fn update_expiration(_id: &str) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
-    logger::log(logger::LogLevel::INFO, "modify auth expiration").await;
+    logger::Log::info("modify auth expiration").await;
     let time: i64 = chrono::offset::Utc::now().timestamp();
     let m = diesel::update(authorizations.find(_id))
         .set(created.eq(time))
@@ -81,7 +80,7 @@ async fn update_expiration(_id: &str) -> Authorization {
 async fn update_data(_id: &str) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
-    logger::log(logger::LogLevel::INFO, "modify auth data").await;
+    logger::Log::info( "modify auth data").await;
     let data: String = utils::generate_rnd();
     let m = diesel::update(authorizations.find(_id))
         .set(rnd.eq(data))
@@ -116,8 +115,7 @@ pub async fn verify_access(address: &str, signature: &str) -> bool {
     if sig_address == utils::ApplicationErrors::LoginError.value() {
         return false;
     }
-    logger::log(logger::LogLevel::DEBUG,
-        &format!("auth verified")).await;
+    logger::Log::info(&format!("auth verified")).await;
     return true;
 }
 

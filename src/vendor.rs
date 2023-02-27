@@ -45,8 +45,7 @@ async fn create(
         v_pgp,
         active,
     };
-    logger::log(logger::LogLevel::DEBUG,
-        &format!("insert vendor: {:?}", new_vendor)).await;
+    logger::Log::debug(&format!("insert vendor: {:?}", new_vendor)).await;
     diesel::insert_into(vendors::table)
         .values(&new_vendor)
         .get_result(conn)
@@ -75,13 +74,13 @@ pub async fn verify_login(address: String, signature: String) -> Authorization {
             if &r.len() > &0 {
                 return f_auth;
             } else {
-                logger::log(logger::LogLevel::INFO, "creating new vendor").await;
+                logger::Log::info("creating new vendor").await;
                 create(connection, &sig_address, "", "", "", &false).await;
                 return f_auth;
             }
         }
         _ => {
-            logger::log(logger::LogLevel::ERROR, "error creating vendor").await;
+            logger::Log::error("error creating vendor").await;
             Default::default()
         }
     }
@@ -97,14 +96,14 @@ pub async fn find(address: String) -> Vendor {
     match results {
         Ok(mut r) => {
             if &r.len() > &0 {
-                logger::log(logger::LogLevel::INFO, "found vendor").await;
+                logger::Log::info("found vendor").await;
                 r.remove(0)
             } else {
                 Default::default()
             }
         }
         _ => {
-            logger::log(logger::LogLevel::ERROR, "error finding vendor").await;
+            logger::Log::error("error finding vendor").await;
             Default::default()
         }
     }
@@ -115,7 +114,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Vendor {
     use self::schema::vendors::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     if update_type == UpdateType::Active.value() {
-        logger::log(logger::LogLevel::INFO, "modify vendor active status").await;
+        logger::Log::info("modify vendor active status").await;
         let m = diesel::update(vendors.find(_id))
             .set(active.eq(true))
             .get_result::<Vendor>(connection);
@@ -124,7 +123,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Vendor {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Description.value() {
-        logger::log(logger::LogLevel::INFO, "modify vendor description").await;
+        logger::Log::info("modify vendor description").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_description.eq(data))
             .get_result::<Vendor>(connection);
@@ -133,7 +132,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Vendor {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Name.value() {
-        logger::log(logger::LogLevel::INFO, "modify vendor name").await;
+        logger::Log::info("modify vendor name").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_name.eq(data))
             .get_result::<Vendor>(connection);
@@ -142,7 +141,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Vendor {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Pgp.value() {
-        logger::log(logger::LogLevel::INFO, "modify vendor pgp").await;
+        logger::Log::info("modify vendor pgp").await;
         let m = diesel::update(vendors.find(_id))
             .set(v_pgp.eq(data))
             .get_result::<Vendor>(connection);

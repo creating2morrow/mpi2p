@@ -3,7 +3,7 @@ use chrono;
 use clap::Parser;
 
 #[derive(Debug, Clone)]
-pub enum LogLevel {
+enum LogLevel {
     DEBUG,
     ERROR,
     INFO,
@@ -22,19 +22,44 @@ impl LogLevel {
 }
 
 /// Log, log better than bad its good
-pub async fn log(level: LogLevel, msg: &str) -> () {
-    let args = args::Args::parse();
-    let set_level = args.log_level.split(",");
-    let vec: Vec<String> = set_level.map(|s| String::from(s)).collect();
-    if vec.contains(&level.value()) {
-        println!(
-            "{}",
-            format!(
-                "|{:?}\t|\t|{:?}| => {}",
-                level,
-                chrono::offset::Utc::now(),
-                msg
-            )
-        );
+pub struct Log{}
+
+impl Log {
+    /// Log a message for debugging.
+    /// This should be removed after fixing the issue.
+    pub async fn debug(msg: &str) -> () {
+        Self::log(LogLevel::DEBUG, msg).await;
+    }
+    /// Log a message for error.
+    /// This should be used in every async fn when something goes wrong.
+    pub async fn error(msg: &str) -> () {
+        Self::log(LogLevel::ERROR, msg).await;
+    }
+    /// Log a message for user information.
+    /// This should be used in every async fn.
+    pub async fn info(msg: &str) -> () {
+        Self::log(LogLevel::INFO, msg).await;
+    }
+    /// Log a message for user information.
+    /// This should be used sparingly when something is off but not broken.
+    pub async fn warn(msg: &str) -> () {
+        Self::log(LogLevel::WARN, msg).await;
+    }
+    /// Base for logging
+    async fn log(level: LogLevel, msg: &str) -> () {
+        let args = args::Args::parse();
+        let set_level = args.log_level.split(",");
+        let vec: Vec<String> = set_level.map(|s| String::from(s)).collect();
+        if vec.contains(&level.value()) {
+            println!(
+                "{}",
+                format!(
+                    "|{:?}\t|\t|{:?}| => {}",
+                    level,
+                    chrono::offset::Utc::now(),
+                    msg
+                )
+            );
+        }
     }
 }
