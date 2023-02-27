@@ -104,7 +104,7 @@ pub async fn create(cid: String, pid: String) -> Order {
 
 
 /// TODO: modification auth needs to be checked per update type
-pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
+pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
     use self::schema::orders::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     // this else if chain is awful, TODO: refactor
@@ -113,7 +113,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_1.eq(data))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -122,7 +122,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_2.eq(data))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -131,7 +131,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_3.eq(data))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -140,7 +140,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_cust_msig_info.eq(data))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -153,7 +153,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_deliver_date.eq(deliver_date))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -162,7 +162,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_hash.eq(data))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -175,16 +175,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_ship_date.eq(ship_date))
             .get_result::<Order>(connection);
-        match m {
-            Ok(m) => m,
-            Err(_e) => Default::default(),
-        };
-    } else if update_type == UpdateType::CustomerKex3.value() {
-        logger::log(logger::LogLevel::INFO, "modify customer kex 3").await;
-        let m = diesel::update(orders.find(_id))
-            .set(o_cust_kex_3.eq(data))
-            .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -193,7 +184,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_vend_kex_1.eq(data))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -202,7 +193,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_vend_kex_2.eq(data))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -211,7 +202,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_vend_kex_3.eq(data))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -220,7 +211,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_vend_msig_info.eq(data))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -229,7 +220,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_3.eq(data))
             .get_result::<Order>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };

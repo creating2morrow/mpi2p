@@ -119,7 +119,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Vendor {
         let m = diesel::update(vendors.find(_id))
             .set(active.eq(true))
             .get_result::<Vendor>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -128,7 +128,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Vendor {
         let m = diesel::update(vendors.find(_id))
             .set(v_description.eq(data))
             .get_result::<Vendor>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -137,7 +137,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Vendor {
         let m = diesel::update(vendors.find(_id))
             .set(v_name.eq(data))
             .get_result::<Vendor>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -146,7 +146,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Vendor {
         let m = diesel::update(vendors.find(_id))
             .set(v_pgp.eq(data))
             .get_result::<Vendor>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };

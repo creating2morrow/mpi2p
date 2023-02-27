@@ -112,19 +112,19 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Customer {
         let m = diesel::update(customers.find(_id))
             .set(c_name.eq(data))
             .get_result::<Customer>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
-        };
+        }
     } else if update_type == UpdateType::Pgp.value() {
         logger::log(logger::LogLevel::INFO, "modify customer pgp").await;
         let m = diesel::update(customers.find(_id))
             .set(c_pgp.eq(data))
             .get_result::<Customer>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
-        };
+        }
     }
     Default::default()
 }

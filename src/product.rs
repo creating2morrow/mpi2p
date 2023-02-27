@@ -58,7 +58,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(products.find(_id))
             .set(in_stock.eq(true))
             .get_result::<Product>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -67,7 +67,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(products.find(_id))
             .set(p_description.eq(data))
             .get_result::<Product>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -76,7 +76,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(products.find(_id))
             .set(p_name.eq(data))
             .get_result::<Product>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -89,7 +89,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(products.find(_id))
             .set(p_price.eq(price_data))
             .get_result::<Product>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
@@ -102,7 +102,7 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         let m = diesel::update(products.find(_id))
             .set(qty.eq(amt))
             .get_result::<Product>(connection);
-        match m {
+        return match m {
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
