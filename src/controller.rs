@@ -114,7 +114,7 @@ pub async fn update_vendor(
     )
 }
 
-/// Create a product by passing vendor creds
+/// Create a product by passing vendor auth
 #[get("/<address>/<signature>/create")]
 pub async fn create_product(
     address: String,
@@ -133,7 +133,7 @@ pub async fn create_product(
     )
 }
 
-/// Get all products by passing vendor id
+/// Get all products by passing vendor auth
 #[get("/<address>/<signature>")]
 pub async fn get_vendor_products(
     address: String,
@@ -152,9 +152,10 @@ pub async fn get_vendor_products(
 }
 
 /// Update product information
-#[patch("/<address>/<signature>/update/<data>/<update_type>")]
+#[patch("/<address>/<signature>/update/<pid>/<data>/<update_type>")]
 pub async fn update_product(
     address: String,
+    pid: String,
     signature: String,
     data: String,
     update_type: i32,
@@ -163,8 +164,7 @@ pub async fn update_product(
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
     }
-    let v: models::Vendor = vendor::find(address).await;
-    let m_product: models::Product = product::modify(v.vid, data, update_type).await;
+    let m_product: models::Product = product::modify(pid, data, update_type).await;
     Custom(
         Status::Accepted,
         Json(reqres::GetProductResponse::build(m_product)),

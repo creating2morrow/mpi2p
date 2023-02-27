@@ -10,6 +10,7 @@ enum UpdateType {
     Description,
     Name,
     Price,
+    Quantity,
 }
 
 impl UpdateType {
@@ -19,6 +20,7 @@ impl UpdateType {
             UpdateType::Description => 1,
             UpdateType::Name => 2,
             UpdateType::Price => 3,
+            UpdateType::Quantity => 4,
         }
     }
 }
@@ -86,6 +88,19 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
         };
         let m = diesel::update(products.find(_id))
             .set(p_price.eq(price_data))
+            .get_result::<Product>(connection);
+        match m {
+            Ok(m) => m,
+            Err(_e) => Default::default(),
+        };
+    } else if update_type == UpdateType::Quantity.value() {
+        logger::log(logger::LogLevel::INFO, "modify product quantity").await;
+        let amt = match data.parse::<i64>() {
+            Ok(n) => n,
+            Err(_e) => 0,
+        };
+        let m = diesel::update(products.find(_id))
+            .set(qty.eq(amt))
             .get_result::<Product>(connection);
         match m {
             Ok(m) => m,

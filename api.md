@@ -26,14 +26,14 @@ curl -X PATCH http://127.0.0.1:8000/<customer|vendor>/<XMR_ADDRESS>/<SIGNATURE>/
 
 # get
 # create a new product
-curl -iv http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/product/create
+curl -iv http://127.0.0.1:8000/product/<XMR_ADDRESS>/<SIGNATURE>/create
 
 # get
 # return all products for a vendor
-curl -iv http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/products/
+curl -iv http://127.0.0.1:8000/products/<XMR_ADDRESS>/<SIGNATURE>
 
 # update product
 # <pid> - i32
 # <data> - String
 # <update_type> - Enum => 0 - in_stock, 1 - description, 2 - name, 3 - price 4 - qty
-curl -X PATCH http://127.0.0.1:8000/<XMR_ADDRESS>/<SIGNATURE>/product/update/<pid>/<data>/<update_type>
+curl -X PATCH http://127.0.0.1:8000/product/<XMR_ADDRESS>/<SIGNATURE>/update/<pid>/<data>/<update_type>
