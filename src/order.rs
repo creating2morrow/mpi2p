@@ -78,6 +78,7 @@ pub async fn create(cid: String, pid: String) -> Order {
         o_cust_kex_3: "",
         o_xmr_address: "",
         o_cust_msig_info: "",
+        o_cust_msig_txset: "",
         o_date: &ts,
         o_deliver_date: &0,
         o_ship_date: &0,
@@ -93,6 +94,7 @@ pub async fn create(cid: String, pid: String) -> Order {
         o_vend_kex_2: "",
         o_vend_kex_3: "",
         o_vend_msig_info: "",
+        o_vend_msig_txset: "",
     };
     debug!("insert order: {:?}", new_order);
     diesel::insert_into(orders::table)

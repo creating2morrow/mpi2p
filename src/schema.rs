@@ -25,6 +25,7 @@ diesel::table! {
         p_id -> Varchar,
         o_xmr_address -> Varchar,
         o_cust_msig_info -> Varchar,
+        o_cust_msig_txset -> Varchar,
         o_cust_kex_1 -> Varchar,
         o_cust_kex_2 -> Varchar,
         o_cust_kex_3 -> Varchar,
@@ -43,6 +44,7 @@ diesel::table! {
         o_vend_kex_2 -> Varchar,
         o_vend_kex_3 -> Varchar,
         o_vend_msig_info -> Varchar,
+        o_vend_msig_txset -> Varchar,
     }
 }
 

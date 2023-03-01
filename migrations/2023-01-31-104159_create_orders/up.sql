@@ -11,6 +11,7 @@ CREATE TABLE orders (
 	    REFERENCES products(pid),
   o_xmr_address VARCHAR NOT NULL,
   o_cust_msig_info VARCHAR NOT NULL,
+  o_cust_msig_txset VARCHAR NOT NULL,
   o_cust_kex_1 VARCHAR NOT NULL,
   o_cust_kex_2 VARCHAR NOT NULL,
   o_cust_kex_3 VARCHAR NOT NULL,
@@ -28,5 +29,6 @@ CREATE TABLE orders (
   o_vend_kex_1 VARCHAR NOT NULL,
   o_vend_kex_2 VARCHAR NOT NULL,
   o_vend_kex_3 VARCHAR NOT NULL,
-  o_vend_msig_info VARCHAR NOT NULL
+  o_vend_msig_info VARCHAR NOT NULL,
+  o_vend_msig_txset VARCHAR NOT NULL
 )
