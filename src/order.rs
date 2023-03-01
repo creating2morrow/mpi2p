@@ -68,7 +68,7 @@ pub async fn create(cid: String, pid: String) -> Order {
     use crate::schema::orders;
     let connection = &mut utils::establish_pgdb_connection().await;
     let ts = chrono::offset::Utc::now().timestamp();
-    let oid: String = utils::generate_rnd();
+    let oid: String = format!("O{}", utils::generate_rnd());
     let new_order = NewOrder {
         orid: &oid,
         c_id: &cid,

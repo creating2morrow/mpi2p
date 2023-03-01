@@ -29,9 +29,9 @@ async fn create(
     pgp: &str,
 ) -> Customer {
     use crate::schema::customers;
-    let s_cid: String = utils::generate_rnd();
+    let f_cid: String = format!("C{}", utils::generate_rnd());
     let new_customer = NewCustomer {
-        cid: &s_cid,
+        cid: &f_cid,
         c_xmr_address: xmr_address,
         c_name: name,
         c_pgp: pgp,

@@ -29,9 +29,9 @@ impl UpdateType {
 pub async fn create(v_id: String) -> Product {
     use crate::schema::products;
     let connection = &mut utils::establish_pgdb_connection().await;
-    let pid: String = utils::generate_rnd();
+    let f_pid: String = format!("P{}", utils::generate_rnd());
     let new_product = NewProduct {
-        pid: &pid,
+        pid: &f_pid,
         v_id: &v_id,
         in_stock: &false,
         p_description: "",

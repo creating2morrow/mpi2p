@@ -37,9 +37,9 @@ async fn create(
     active: &bool,
 ) -> Vendor {
     use crate::schema::vendors;
-    let vid: String = utils::generate_rnd();
+    let f_vid: String = format!("V{}", utils::generate_rnd());
     let new_vendor = NewVendor {
-        vid: &vid,
+        vid: &f_vid,
         v_xmr_address,
         v_name,
         v_description,
