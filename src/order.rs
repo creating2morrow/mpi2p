@@ -102,12 +102,14 @@ pub async fn create(cid: String, pid: String) -> Order {
 }
 
 
-/// TODO: modification auth needs to be checked per update type
+/// Modify order lifecycle
 pub async fn modify(_id: String, pid: String, data: String, update_type: i32) -> Order {
     use self::schema::orders::dsl::*;
+    let t_id: String = String::from(&_id);
+    let is_customer = is_customer(t_id);
     let connection = &mut utils::establish_pgdb_connection().await;
     // this else if chain is awful, TODO: refactor
-    if update_type == UpdateType::CustomerKex1.value() {
+    if update_type == UpdateType::CustomerKex1.value() && is_customer {
         info!("modify order customer kex 1");
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_1.eq(data))
@@ -116,7 +118,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::CustomerKex2.value() {
+    } else if update_type == UpdateType::CustomerKex2.value() && is_customer {
         info!("modify customer kex 2");
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_2.eq(data))
@@ -125,7 +127,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::CustomerKex3.value() {
+    } else if update_type == UpdateType::CustomerKex3.value() && is_customer {
         info!("modify customer kex 3");
         let m = diesel::update(orders.find(_id))
             .set(o_cust_kex_3.eq(data))
@@ -134,7 +136,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::CustomerMultisigInfo.value() {
+    } else if update_type == UpdateType::CustomerMultisigInfo.value() && is_customer {
         info!("modify customer multisig info");
         let m = diesel::update(orders.find(_id))
             .set(o_cust_msig_info.eq(data))
@@ -143,7 +145,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::Deliver.value() {
+    } else if update_type == UpdateType::Deliver.value() && !is_customer {
         info!("modify devliver date");
         let deliver_date = match data.parse::<i64>() {
             Ok(n) => n,
@@ -156,7 +158,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::Hash.value() {
+    } else if update_type == UpdateType::Hash.value() && is_customer {
         info!("modify order hash");
         let m = diesel::update(orders.find(_id))
             .set(o_hash.eq(data))
@@ -165,7 +167,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::Ship.value() {
+    } else if update_type == UpdateType::Ship.value() && !is_customer {
         info!("modify order ship date");
         let ship_date = match data.parse::<i64>() {
             Ok(n) => n,
@@ -178,7 +180,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::VendorKex1.value() {
+    } else if update_type == UpdateType::VendorKex1.value() && !is_customer {
         info!("modify order customer kex 1");
         let m = diesel::update(orders.find(_id))
             .set(o_vend_kex_1.eq(data))
@@ -196,7 +198,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::VendorKex3.value() {
+    } else if update_type == UpdateType::VendorKex3.value() && !is_customer {
         info!("modify vendor kex 3");
         let m = diesel::update(orders.find(_id))
             .set(o_vend_kex_3.eq(data))
@@ -205,7 +207,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::VendorMultisigInfo.value() {
+    } else if update_type == UpdateType::VendorMultisigInfo.value() && !is_customer {
         info!("modify vendor multisig info");
         let m = diesel::update(orders.find(_id))
             .set(o_vend_msig_info.eq(data))
@@ -214,7 +216,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::Quantity.value() {
+    } else if update_type == UpdateType::Quantity.value() && is_customer {
         info!("modify quantity");
         // check qty/in_stock
         let m_product: Product = product::find(pid).await;
@@ -235,4 +237,10 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
         };
     }
     Default::default()
+}
+
+pub fn is_customer(id: String) -> bool {
+    let first: char = id.chars().nth(0).unwrap();
+    debug!("id starts with: {}", id.chars().nth(0).unwrap());
+    return first == 'C'
 }
