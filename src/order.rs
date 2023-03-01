@@ -1,4 +1,5 @@
 use crate::models::*;
+use crate::product;
 use crate::schema;
 use crate::utils;
 use diesel::prelude::*;
@@ -102,7 +103,7 @@ pub async fn create(cid: String, pid: String) -> Order {
 
 
 /// TODO: modification auth needs to be checked per update type
-pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
+pub async fn modify(_id: String, pid: String, data: String, update_type: i32) -> Order {
     use self::schema::orders::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     // this else if chain is awful, TODO: refactor
@@ -214,9 +215,19 @@ pub async fn modify(_id: String, data: String, update_type: i32) -> Order {
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Quantity.value() {
-        info!("modify vendor kex 3");
+        info!("modify quantity");
+        // check qty/in_stock
+        let m_product: Product = product::find(pid).await;
+        let qty = match data.parse::<i64>() {
+            Ok(n) => n,
+            Err(_e) => 0,
+        };
+        let is_invalid_qty: bool = !m_product.in_stock || m_product.qty == 0 || qty > m_product.qty;
+        if is_invalid_qty {
+            return Default::default();
+        }
         let m = diesel::update(orders.find(_id))
-            .set(o_cust_kex_3.eq(data))
+            .set(o_quantity.eq(qty))
             .get_result::<Order>(connection);
         return match m {
             Ok(m) => m,

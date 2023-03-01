@@ -46,6 +46,29 @@ pub async fn create(v_id: String) -> Product {
         .expect("error saving new product")
 }
 
+/// Lookup product
+pub async fn find(r_pid: String) -> Product {
+    use self::schema::products::dsl::*;
+    let connection = &mut utils::establish_pgdb_connection().await;
+    let results = products
+        .filter(schema::products::pid.eq(r_pid))
+        .load::<Product>(connection);
+    match results {
+        Ok(mut r) => {
+            info!("found product");
+            if &r.len() > &0 {
+                r.remove(0)
+            } else {
+                Default::default()
+            }
+        }
+        _ => {
+            error!("error finding product");
+            Default::default()
+        }
+    }
+}
+
 pub async fn modify(_id: String, data: String, update_type: i32) -> Product {
     use self::schema::products::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;

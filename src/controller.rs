@@ -192,7 +192,27 @@ pub async fn initialize_order(
     )
 }
 
-// update order
+/// Update order information
+#[patch("/<address>/<signature>/update/<pid>/<oid>/<data>/<update_type>")]
+pub async fn update_order(
+    address: String,
+    oid: String,
+    pid: String,
+    signature: String,
+    data: String,
+    update_type: i32,
+) -> Custom<Json<reqres::InitializeOrderResponse>> {
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
+    if !is_verified {
+        return Custom(Status::Unauthorized, Json(Default::default()));
+    }
+    let temp_pid: String = String::from(&pid);
+    let m_order: models::Order = order::modify(oid, pid, data, update_type).await;
+    Custom(
+        Status::Accepted,
+        Json(reqres::InitializeOrderResponse::build(temp_pid, m_order)),
+    )
+}
 
 // Get all orders by passing vendor id
 
