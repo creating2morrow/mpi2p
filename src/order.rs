@@ -241,6 +241,6 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
 
 pub fn is_customer(id: String) -> bool {
     let first: char = id.chars().nth(0).unwrap();
-    debug!("id starts with: {}", id.chars().nth(0).unwrap());
+    debug!("id starts with: {}", first);
     return first == 'C'
 }
