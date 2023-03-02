@@ -148,7 +148,7 @@ impl Default for GetAuthResponse {
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
-pub struct InitializeOrderResponse {
+pub struct GetOrderResponse {
     pub orid: String,
     pub pid: String,
     pub xmr_address: String,
@@ -173,9 +173,9 @@ pub struct InitializeOrderResponse {
     pub vend_msig_info: String,
 }
 
-impl Default for InitializeOrderResponse {
+impl Default for GetOrderResponse {
     fn default() -> Self {
-        InitializeOrderResponse {
+        GetOrderResponse {
             orid: String::from(""),
             pid: String::from(""),
             xmr_address: String::from(""),
@@ -198,6 +198,20 @@ impl Default for InitializeOrderResponse {
             vend_kex_2: String::from(""),
             vend_kex_3: String::from(""),
             vend_msig_info: String::from(""),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
+pub struct GetOrdersResponse {
+    pub orders: Vec<GetOrderResponse>,
+}
+
+impl Default for GetOrdersResponse {
+    fn default() -> Self {
+        GetOrdersResponse {
+            orders: Vec::new(),
         }
     }
 }
@@ -266,9 +280,9 @@ impl GetVendorProductsResponse {
     }
 }
 
-impl InitializeOrderResponse {
+impl GetOrderResponse {
     pub fn build(pid: String, m_order: models::Order) -> Self {
-        InitializeOrderResponse {
+        GetOrderResponse {
             orid: m_order.orid,
             pid,
             xmr_address: m_order.o_xmr_address,
@@ -292,6 +306,40 @@ impl InitializeOrderResponse {
             vend_kex_3: m_order.o_vend_kex_3,
             vend_msig_info: m_order.o_vend_msig_info,
         }
+    }
+}
+
+impl GetOrdersResponse {
+    pub fn build(m_orders: Vec<models::Order>) -> Self {
+        let mut v_res: Vec<GetOrderResponse> = Vec::new();
+        for m in m_orders {
+            let o_res: GetOrderResponse = GetOrderResponse {
+                orid: m.orid,
+                pid: m.p_id,
+                xmr_address: m.o_xmr_address,
+                cust_msig_info: m.o_cust_msig_info,
+                cust_kex_1: m.o_cust_kex_1,
+                cust_kex_2: m.o_cust_kex_2,
+                cust_kex_3: m.o_cust_kex_3,
+                date: m.o_date,
+                deliver_date: m.o_deliver_date,
+                ship_date: m.o_ship_date,
+                hash: m.o_hash,
+                msig_prepare: m.o_msig_prepare,
+                msig_make: m.o_msig_make,
+                msig_kex_1: m.o_msig_kex_1,
+                msig_kex_2: m.o_msig_kex_2,
+                msig_kex_3: m.o_msig_kex_3,
+                status: m.o_status,
+                quantity: m.o_quantity,
+                vend_kex_1: m.o_vend_kex_1,
+                vend_kex_2: m.o_vend_kex_2,
+                vend_kex_3: m.o_vend_kex_3,
+                vend_msig_info: m.o_vend_msig_info,
+            };
+            v_res.push(o_res);
+        }
+            GetOrdersResponse { orders: v_res }
     }
 }
 // END response builders

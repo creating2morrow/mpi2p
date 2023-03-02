@@ -1,9 +1,11 @@
+use crate::customer;
 use crate::models::*;
 use crate::product;
 use crate::schema;
 use crate::utils;
+use crate::vendor;
 use diesel::prelude::*;
-use log::{debug, info};
+use log::{debug, error, info};
 
 // enum StatusType {
 //     Delivered,
@@ -69,10 +71,12 @@ pub async fn create(cid: String, pid: String) -> Order {
     let connection = &mut utils::establish_pgdb_connection().await;
     let ts = chrono::offset::Utc::now().timestamp();
     let oid: String = format!("O{}", utils::generate_rnd());
+    let m_product: Product = product::find(String::from(&pid)).await;
     let new_order = NewOrder {
         orid: &oid,
         c_id: &cid,
         p_id: &pid,
+        v_id: &m_product.v_id,
         o_cust_kex_1: "",
         o_cust_kex_2: "",
         o_cust_kex_3: "",
@@ -102,7 +106,6 @@ pub async fn create(cid: String, pid: String) -> Order {
         .get_result(connection)
         .expect("error saving new order")
 }
-
 
 /// Modify order lifecycle
 pub async fn modify(_id: String, pid: String, data: String, update_type: i32) -> Order {
@@ -241,8 +244,47 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
     Default::default()
 }
 
+/// Lookup all orders for customer or vendor
+pub async fn find_all(address: String, corv: String) -> Vec<Order> {
+    use self::schema::orders::dsl::*;
+    let connection = &mut utils::establish_pgdb_connection().await;
+    if corv == utils::LoginType::Customer.value() {
+        let m_cust: Customer = customer::find(address).await;
+        let results = orders
+            .filter(schema::orders::c_id.eq(m_cust.cid))
+            .load::<Order>(connection);
+        return match results {
+            Ok(r) => {
+                info!("found customer orders");
+                r
+            }
+            _ => {
+                error!("error finding customer orders");
+                let v: Vec<Order> = Vec::new();
+                v
+            }
+        };
+    } else {
+        let m_vend: Vendor = vendor::find(address).await;
+        let results = orders
+            .filter(schema::orders::v_id.eq(m_vend.vid))
+            .load::<Order>(connection);
+        return match results {
+            Ok(r) => {
+                info!("found vendor orders");
+                r
+            }
+            _ => {
+                error!("error finding vendor orders");
+                let v: Vec<Order> = Vec::new();
+                v
+            }
+        };
+    };
+}
+
 pub fn is_customer(id: String) -> bool {
     let first: char = id.chars().nth(0).unwrap();
     debug!("id starts with: {}", first);
-    return first == 'C'
+    return first == 'C';
 }

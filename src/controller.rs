@@ -177,7 +177,7 @@ pub async fn initialize_order(
     address: String,
     signature: String,
     pid: String,
-) -> Custom<Json<reqres::InitializeOrderResponse>> {
+) -> Custom<Json<reqres::GetOrderResponse>> {
     let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
@@ -188,7 +188,7 @@ pub async fn initialize_order(
     let m_order: models::Order = order::create(m_customer.cid, temp_pid).await;
     Custom(
         Status::Accepted,
-        Json(reqres::InitializeOrderResponse::build(pid, m_order)),
+        Json(reqres::GetOrderResponse::build(pid, m_order)),
     )
 }
 
@@ -201,7 +201,7 @@ pub async fn update_order(
     signature: String,
     data: String,
     update_type: i32,
-) -> Custom<Json<reqres::InitializeOrderResponse>> {
+) -> Custom<Json<reqres::GetOrderResponse>> {
     let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
         return Custom(Status::Unauthorized, Json(Default::default()));
@@ -210,12 +210,27 @@ pub async fn update_order(
     let m_order: models::Order = order::modify(oid, pid, data, update_type).await;
     Custom(
         Status::Accepted,
-        Json(reqres::InitializeOrderResponse::build(temp_pid, m_order)),
+        Json(reqres::GetOrderResponse::build(temp_pid, m_order)),
     )
 }
 
-// Get all orders by passing vendor id
-
-// Get all orders by passing customer id
+/// Get all orders
+///  by passing auth
+#[get("/<corv>/<address>/<signature>")]
+pub async fn get_orders(
+    address: String,
+    corv: String,
+    signature: String,
+) -> Custom<Json<reqres::GetOrdersResponse>> {
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
+    if !is_verified {
+        return Custom(Status::Unauthorized, Json(Default::default()));
+    }
+    let m_orders: Vec<models::Order> = order::find_all(address, corv).await;
+    Custom(
+        Status::Accepted,
+        Json(reqres::GetOrdersResponse::build(m_orders)),
+    )
+}
 
 // END JSON APIs

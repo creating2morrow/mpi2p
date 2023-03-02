@@ -23,6 +23,7 @@ diesel::table! {
         orid -> Varchar,
         c_id -> Varchar,
         p_id -> Varchar,
+        v_id -> Varchar,
         o_xmr_address -> Varchar,
         o_cust_msig_info -> Varchar,
         o_cust_msig_txset -> Varchar,
@@ -73,7 +74,6 @@ diesel::table! {
 
 diesel::joinable!(orders -> customers (c_id));
 diesel::joinable!(orders -> products (p_id));
-diesel::joinable!(products -> vendors (v_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     authorizations,
