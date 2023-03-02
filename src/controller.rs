@@ -21,7 +21,7 @@ pub async fn get_version() -> Custom<Json<reqres::XmrApiVersionResponse>> {
     let res: reqres::XmrRpcVersionResponse = monero::get_version().await;
     let version: i32 = res.result.version;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::XmrApiVersionResponse { version }),
     )
 }
@@ -35,12 +35,11 @@ pub async fn get_customer(
 ) -> Custom<Json<reqres::GetCustomerResponse>> {
     let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
-        let res: reqres::GetCustomerResponse = Default::default();
-        return Custom(Status::Unauthorized, Json(res));
+        return Custom(Status::Unauthorized, Json(Default::default()));
     }
     let m_customer: models::Customer = customer::find(address).await;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::GetCustomerResponse::build(m_customer)),
     )
 }
@@ -55,7 +54,7 @@ pub async fn get_vendor(address: String, signature: String) -> Custom<Json<reqre
     }
     let m_vendor: models::Vendor = vendor::find(address).await;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::GetVendorResponse::build(m_vendor)),
     )
 }
@@ -69,7 +68,7 @@ pub async fn login(
 ) -> Custom<Json<reqres::GetAuthResponse>> {
     let m_auth: models::Authorization = auth::get_login(address, corv, signature).await;
     Custom(
-        Status::Accepted,
+        Status::Created,
         Json(reqres::GetAuthResponse::build(m_auth)),
     )
 }
@@ -89,7 +88,7 @@ pub async fn update_customer(
     let c: models::Customer = customer::find(address).await;
     let m_customer: models::Customer = customer::modify(c.cid, data, update_type).await;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::GetCustomerResponse::build(m_customer)),
     )
 }
@@ -109,7 +108,7 @@ pub async fn update_vendor(
     let v: models::Vendor = vendor::find(address).await;
     let m_vendor: models::Vendor = vendor::modify(v.vid, data, update_type).await;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::GetVendorResponse::build(m_vendor)),
     )
 }
@@ -122,13 +121,12 @@ pub async fn create_product(
 ) -> Custom<Json<reqres::GetProductResponse>> {
     let is_verified: bool = auth::verify_access(&address, &signature).await;
     if !is_verified {
-        let res: reqres::GetProductResponse = Default::default();
-        return Custom(Status::Unauthorized, Json(res));
+        return Custom(Status::Unauthorized, Json(Default::default()));
     }
     let v: models::Vendor = vendor::find(address).await;
     let m_product: models::Product = product::create(v.vid).await;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::GetProductResponse::build(m_product)),
     )
 }
@@ -146,7 +144,7 @@ pub async fn get_vendor_products(
     let m_vendor: models::Vendor = vendor::find(address).await;
     let m_products: Vec<models::Product> = product::find_all(m_vendor.vid).await;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::GetVendorProductsResponse::build(m_products)),
     )
 }
@@ -166,7 +164,7 @@ pub async fn update_product(
     }
     let m_product: models::Product = product::modify(pid, data, update_type).await;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::GetProductResponse::build(m_product)),
     )
 }
@@ -187,7 +185,7 @@ pub async fn initialize_order(
     let temp_pid = String::from(&pid);
     let m_order: models::Order = order::create(m_customer.cid, temp_pid).await;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::GetOrderResponse::build(pid, m_order)),
     )
 }
@@ -209,7 +207,7 @@ pub async fn update_order(
     let temp_pid: String = String::from(&pid);
     let m_order: models::Order = order::modify(oid, pid, data, update_type).await;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::GetOrderResponse::build(temp_pid, m_order)),
     )
 }
@@ -228,7 +226,7 @@ pub async fn get_orders(
     }
     let m_orders: Vec<models::Order> = order::find_all(address, corv).await;
     Custom(
-        Status::Accepted,
+        Status::Ok,
         Json(reqres::GetOrdersResponse::build(m_orders)),
     )
 }
