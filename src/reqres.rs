@@ -2,6 +2,7 @@ use crate::models;
 use serde::{Deserialize, Serialize};
 // All http requests and responses are here
 
+// START XMR Structs
 #[derive(Deserialize, Debug)]
 pub struct XmrRpcVerifyResult {
     pub good: bool,
@@ -17,6 +18,20 @@ pub struct XmrRpcVerifyParams {
     pub address: String,
     pub data: String,
     pub signature: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcWalletParams {
+    pub filename: String,
+    pub language: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcCreateRequest {
+    pub jsonrpc: String,
+    pub id: String,
+    pub method: String,
+    pub params: XmrRpcWalletParams,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -44,11 +59,33 @@ pub struct XmrRpcVersionResponse {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
-pub struct XmrRpcVersionRequest {
+pub struct XmrRpcRequest {
     pub jsonrpc: String,
     pub id: String,
     pub method: String,
 }
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcPrepareResult {
+    pub multisig_info: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcPrepareResponse {
+    pub result: XmrRpcPrepareResult,
+}
+
+impl Default for XmrRpcPrepareResponse {
+    fn default() -> Self {
+        XmrRpcPrepareResponse {
+            result:
+            XmrRpcPrepareResult {
+                multisig_info: String::from("")
+            }
+        }
+    }
+}
+// END XMR Structs
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]

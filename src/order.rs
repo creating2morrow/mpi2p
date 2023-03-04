@@ -1,5 +1,6 @@
 use crate::customer;
 use crate::models::*;
+use crate::monero;
 use crate::product;
 use crate::schema;
 use crate::utils;
@@ -49,18 +50,18 @@ enum UpdateType {
 impl UpdateType {
     pub fn value(&self) -> i32 {
         match *self {
-            UpdateType::CustomerKex1 => 0,
-            UpdateType::CustomerKex2 => 1,
-            UpdateType::CustomerKex3 => 2,
-            UpdateType::CustomerMultisigInfo => 3,
-            UpdateType::Deliver => 4,
-            UpdateType::Hash => 5,
-            UpdateType::Ship => 6,
-            UpdateType::VendorKex1 => 7,
-            UpdateType::VendorKex2 => 8,
-            UpdateType::VendorKex3 => 9,
-            UpdateType::VendorMultisigInfo => 10,
-            UpdateType::Quantity => 11,
+            UpdateType::CustomerKex1 => 0,          // make output from customer
+            UpdateType::CustomerKex2 => 1,          // might need this later?
+            UpdateType::CustomerKex3 => 2,          // might need this later?
+            UpdateType::CustomerMultisigInfo => 3,  // prepare output from customer
+            UpdateType::Deliver => 4,               // customer has received the item, released funds
+            UpdateType::Hash => 5,                  // tx hash from funding the wallet order
+            UpdateType::Ship => 6,                  // update ship date, app doesn't store tracking numbers
+            UpdateType::VendorKex1 => 7,            // make output from vendor
+            UpdateType::VendorKex2 => 8,            // might need this later?
+            UpdateType::VendorKex3 => 9,            // might need this later?
+            UpdateType::VendorMultisigInfo => 10,   // prepare output from vendor
+            UpdateType::Quantity => 11,             // this can be updated until wallet is funded
         }
     }
 }
@@ -101,11 +102,17 @@ pub async fn create(cid: String, pid: String) -> Order {
         o_vend_msig_txset: "",
     };
     debug!("insert order: {:?}", new_order);
+    monero::create_wallet(String::from(&oid)).await;
     diesel::insert_into(orders::table)
         .values(&new_order)
         .get_result(connection)
         .expect("error saving new order")
+    // create wallet for the order
 }
+
+
+// TODO: automate prepare msig info injection into order by checking that
+// both vendor and customer have sent their info first.
 
 /// Modify order lifecycle
 pub async fn modify(_id: String, pid: String, data: String, update_type: i32) -> Order {
