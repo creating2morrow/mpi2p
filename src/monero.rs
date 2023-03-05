@@ -13,9 +13,11 @@ struct RpcLogin {
 enum RpcFields {
     Create,
     Close,
+    Finalize,
     GetVersion,
     Id,
     JsonRpcVersion,
+    Make,
     Open,
     Prepare,
     Verify,
@@ -26,11 +28,13 @@ impl RpcFields {
         match *self {
             RpcFields::Create => String::from("create_wallet"),
             RpcFields::Close => String::from("close_wallet"),
+            RpcFields::Finalize => String::from("finalize_multisig"),
             RpcFields::GetVersion => String::from("get_version"),
             RpcFields::Id => String::from("0"),
             RpcFields::JsonRpcVersion => String::from("2.0"),
+            RpcFields::Make => String::from("make_multisig"),
             RpcFields::Open => String::from("open_wallet"),
-            RpcFields::Prepare => String::from("prepare_wallet"),
+            RpcFields::Prepare => String::from("prepare_multisig"),
             RpcFields::Verify => String::from("verify"),
         }
     }
@@ -229,7 +233,6 @@ pub async fn prepare_wallet() -> reqres::XmrRpcPrepareResponse {
     match client.post(host).json(&req)
     .send_with_digest_auth(&login.username, &login.credential).await {
         Ok(response) => {
-            // The result from wallet operation is empty
             let res = response.json::<reqres::XmrRpcPrepareResponse>().await;
             debug!("prepare response: {:?}", res);
             match res {
@@ -253,14 +256,13 @@ pub async fn make_wallet(info: Vec<String>) -> reqres::XmrRpcMakeResponse {
     let req = reqres::XmrRpcMakeRequest {
         jsonrpc: RpcFields::JsonRpcVersion.value(),
         id: RpcFields::Id.value(),
-        method: RpcFields::Prepare.value(),
+        method: RpcFields::Make.value(),
         params,
     };
     let login: RpcLogin = get_rpc_creds();
     match client.post(host).json(&req)
     .send_with_digest_auth(&login.username, &login.credential).await {
         Ok(response) => {
-            // The result from wallet operation is empty
             let res = response.json::<reqres::XmrRpcMakeResponse>().await;
             debug!("make response: {:?}", res);
             match res {
@@ -272,4 +274,31 @@ pub async fn make_wallet(info: Vec<String>) -> reqres::XmrRpcMakeResponse {
     }
 }
 
+pub async fn finalize_wallet(info: Vec<String>) -> reqres::XmrRpcFinalizeResponse {
+    info!("finalize msig wallet");
+    let client = reqwest::Client::new();
+    let host = get_rpc_host();
+    let params = reqres::XmrRpcFinalizeParams {
+        multisig_info: info,
+    };
+    let req = reqres::XmrRpcFinalizeRequest {
+        jsonrpc: RpcFields::JsonRpcVersion.value(),
+        id: RpcFields::Id.value(),
+        method: RpcFields::Finalize.value(),
+        params,
+    };
+    let login: RpcLogin = get_rpc_creds();
+    match client.post(host).json(&req)
+    .send_with_digest_auth(&login.username, &login.credential).await {
+        Ok(response) => {
+            let res = response.json::<reqres::XmrRpcFinalizeResponse>().await;
+            debug!("finalize response: {:?}", res);
+            match res {
+                Ok(res) => res,
+                _ => Default::default(),
+            }
+        }
+        Err(_) => Default::default()
+    }
+}
 // END Multisig

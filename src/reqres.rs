@@ -33,6 +33,11 @@ pub struct XmrRpcMakeParams {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcFinalizeParams {
+    pub multisig_info: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct XmrRpcCreateRequest {
     pub jsonrpc: String,
     pub id: String,
@@ -46,6 +51,14 @@ pub struct XmrRpcMakeRequest {
     pub id: String,
     pub method: String,
     pub params: XmrRpcMakeParams,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcFinalizeRequest {
+    pub jsonrpc: String,
+    pub id: String,
+    pub method: String,
+    pub params: XmrRpcFinalizeParams,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -126,6 +139,27 @@ impl Default for XmrRpcMakeResponse {
             XmrRpcMakeResult {
                 address: String::from(""),
                 multisig_info: String::from(""),
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcFinalizeResult {
+    pub address: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcFinalizeResponse {
+    pub result: XmrRpcFinalizeResult,
+}
+
+impl Default for XmrRpcFinalizeResponse {
+    fn default() -> Self {
+        XmrRpcFinalizeResponse {
+            result:
+            XmrRpcFinalizeResult {
+                address: String::from(""),
             }
         }
     }
