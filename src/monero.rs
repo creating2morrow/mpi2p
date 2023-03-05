@@ -68,14 +68,10 @@ pub async fn get_version() -> reqres::XmrRpcVersionResponse {
             debug!("get version response: {:?}", res);
             match res {
                 Ok(res) => res,
-                _ => reqres::XmrRpcVersionResponse {
-                    result: reqres::XmrRpcVersionResult { version: 0 },
-                },
+                _ => Default::default(),
             }
         }
-        Err(_e) => reqres::XmrRpcVersionResponse {
-            result: reqres::XmrRpcVersionResult { version: 0 },
-        },
+        Err(_e) => Default::default(),
     }
 }
 

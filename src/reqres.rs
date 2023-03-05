@@ -58,6 +58,14 @@ pub struct XmrRpcVersionResponse {
     pub result: XmrRpcVersionResult,
 }
 
+impl Default for XmrRpcVersionResponse {
+    fn default() -> Self {
+        XmrRpcVersionResponse {
+            result: XmrRpcVersionResult { version: 0 }
+        }
+    }
+}
+
 #[derive(Deserialize, Serialize, Debug)]
 pub struct XmrRpcRequest {
     pub jsonrpc: String,
