@@ -11,6 +11,7 @@ struct RpcLogin {
 }
 
 enum RpcFields {
+    Balance,
     Create,
     Close,
     Finalize,
@@ -26,6 +27,7 @@ enum RpcFields {
 impl RpcFields {
     pub fn value(&self) -> String {
         match *self {
+            RpcFields::Balance => String::from("get_balance"),
             RpcFields::Create => String::from("create_wallet"),
             RpcFields::Close => String::from("close_wallet"),
             RpcFields::Finalize => String::from("finalize_multisig"),
@@ -274,6 +276,7 @@ pub async fn make_wallet(info: Vec<String>) -> reqres::XmrRpcMakeResponse {
     }
 }
 
+/// Performs the xmr rpc 'finalize_multisig' method
 pub async fn finalize_wallet(info: Vec<String>) -> reqres::XmrRpcFinalizeResponse {
     info!("finalize msig wallet");
     let client = reqwest::Client::new();
@@ -301,4 +304,38 @@ pub async fn finalize_wallet(info: Vec<String>) -> reqres::XmrRpcFinalizeRespons
         Err(_) => Default::default()
     }
 }
+
+/// Performs the xmr rpc 'get_balance' method
+pub async fn get_balance() -> reqres::XmrRpcBalanceResponse {
+    info!("fetching wallet balance");
+    let client = reqwest::Client::new();
+    let host = get_rpc_host();
+    let params: reqres::XmrRpcBalanceParams = reqres::XmrRpcBalanceParams { 
+        account_index: 0, address_indices: vec![0], all_accounts: false, strict: false, 
+    };
+    let req = reqres::XmrRpcBalanceRequest {
+        jsonrpc: RpcFields::JsonRpcVersion.value(),
+        id: RpcFields::Id.value(),
+        method: RpcFields::Balance.value(),
+        params,
+    };
+    let login: RpcLogin = get_rpc_creds();
+    match client.post(host).json(&req)
+    .send_with_digest_auth(&login.username, &login.credential).await {
+        Ok(response) => {
+            let res = response.json::<reqres::XmrRpcBalanceResponse>().await;
+            debug!("balance response: {:?}", res);
+            match res {
+                Ok(res) => res,
+                _ => Default::default(),
+            }
+        }
+        Err(_) => Default::default()
+    }
+}
+/*
+    TODO:
+        - export / import multisig info
+        - sign multisig txset
+ */
 // END Multisig

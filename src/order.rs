@@ -10,6 +10,7 @@ use log::{debug, error, info};
 
 // enum StatusType {
 //     Delivered,
+//     Dispute,
 //     Error,
 //     MultisigMissing,
 //     MulitsigComplete,
@@ -22,12 +23,13 @@ use log::{debug, error, info};
 //     pub fn value(&self) -> i32 {
 //         match *self {
 //             StatusType::Delivered => 0,
-//             StatusType::Error => 1,
-//             StatusType::MultisigMissing => 2,
-//             StatusType::MulitsigComplete => 3,
-//             StatusType::Signed => 4,
-//             StatusType::Shipped => 5,
-//             StatusType::Submitted => 6,
+//             StatusType::Dispute => 1,
+//             StatusType::Error => 2,
+//             StatusType::MultisigMissing => 3,
+//             StatusType::MulitsigComplete => 4,
+//             StatusType::Signed => 5,
+//             StatusType::Shipped => 6,
+//             StatusType::Submitted => 7,
 //         }
 //     }
 // }
@@ -111,7 +113,7 @@ pub async fn create(cid: String, pid: String) -> Order {
 }
 
 
-// TODO: automate prepare msig info injection into order by checking that
+// TODO: automate msig info injection into order by checking that
 // both vendor and customer have sent their info first.
 
 /// Modify order lifecycle
@@ -201,7 +203,7 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
             Ok(m) => m,
             Err(_e) => Default::default(),
         };
-    } else if update_type == UpdateType::VendorKex2.value() {
+    } else if update_type == UpdateType::VendorKex2.value() && !is_customer {
         info!("modify vendor kex 2");
         let m = diesel::update(orders.find(_id))
             .set(o_vend_kex_2.eq(data))

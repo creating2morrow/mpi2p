@@ -3,16 +3,8 @@ use serde::{Deserialize, Serialize};
 // All http requests and responses are here
 
 // START XMR Structs
-#[derive(Deserialize, Debug)]
-pub struct XmrRpcVerifyResult {
-    pub good: bool,
-}
 
-#[derive(Deserialize, Debug)]
-pub struct XmrRpcVerifyResponse {
-    pub result: XmrRpcVerifyResult,
-}
-
+// params
 #[derive(Deserialize, Serialize, Debug)]
 pub struct XmrRpcVerifyParams {
     pub address: String,
@@ -38,11 +30,34 @@ pub struct XmrRpcFinalizeParams {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcBalanceParams {
+    pub account_index: u8,
+    pub address_indices: Vec<u8>,
+    pub all_accounts: bool,
+    pub strict: bool,
+}
+// requests
+#[derive(Deserialize, Serialize, Debug)]
 pub struct XmrRpcCreateRequest {
     pub jsonrpc: String,
     pub id: String,
     pub method: String,
     pub params: XmrRpcWalletParams,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcRequest {
+    pub jsonrpc: String,
+    pub id: String,
+    pub method: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcBalanceRequest {
+    pub jsonrpc: String,
+    pub id: String,
+    pub method: String,
+    pub params: XmrRpcBalanceParams,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -68,10 +83,60 @@ pub struct XmrRpcVerifyRequest {
     pub method: String,
     pub params: XmrRpcVerifyParams,
 }
+// results
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcVerifyResult {
+    pub good: bool,
+}
 
 #[derive(Deserialize, Debug)]
 pub struct XmrRpcVersionResult {
     pub version: i32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcFinalizeResult {
+    pub address: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcPrepareResult {
+    pub multisig_info: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcMakeResult {
+    pub address: String,
+    pub multisig_info: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct SubAddressInfo {
+    pub account_index: u8,
+    pub address_index: u8,
+    pub address: String,
+    pub balance: u128,
+    pub unlocked_balance: u128,
+    pub label: String,
+    pub num_unspent_outputs: u8,
+    pub time_to_unlock: u128,
+    pub blocks_to_unlock: u128,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcBalanceResult {
+    pub balance: u128,
+    pub unlocked_balance: u128,
+    pub multisig_import_needed: bool,
+    pub time_to_unlock: u128,
+    pub blocks_to_unlock: u128,
+    pub per_subaddress: Vec<SubAddressInfo>,
+
+}
+// responses
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcVerifyResponse {
+    pub result: XmrRpcVerifyResult,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -93,18 +158,6 @@ impl Default for XmrRpcVersionResponse {
     }
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-pub struct XmrRpcRequest {
-    pub jsonrpc: String,
-    pub id: String,
-    pub method: String,
-}
-
-#[derive(Deserialize, Debug)]
-pub struct XmrRpcPrepareResult {
-    pub multisig_info: String,
-}
-
 #[derive(Deserialize, Debug)]
 pub struct XmrRpcPrepareResponse {
     pub result: XmrRpcPrepareResult,
@@ -122,9 +175,24 @@ impl Default for XmrRpcPrepareResponse {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct XmrRpcMakeResult {
-    pub address: String,
-    pub multisig_info: String,
+pub struct XmrRpcBalanceResponse {
+    pub result: XmrRpcBalanceResult,
+}
+
+impl Default for XmrRpcBalanceResponse {
+    fn default() -> Self {
+        XmrRpcBalanceResponse {
+            result:
+            XmrRpcBalanceResult {
+                balance: 0,
+                unlocked_balance: 0,
+                multisig_import_needed: false,
+                time_to_unlock: 0,
+                blocks_to_unlock: 0,
+                per_subaddress: Vec::new()
+            }
+        }
+    }
 }
 
 #[derive(Deserialize, Debug)]
@@ -145,11 +213,6 @@ impl Default for XmrRpcMakeResponse {
 }
 
 #[derive(Deserialize, Debug)]
-pub struct XmrRpcFinalizeResult {
-    pub address: String,
-}
-
-#[derive(Deserialize, Debug)]
 pub struct XmrRpcFinalizeResponse {
     pub result: XmrRpcFinalizeResult,
 }
@@ -164,7 +227,6 @@ impl Default for XmrRpcFinalizeResponse {
         }
     }
 }
-
 // END XMR Structs
 
 #[derive(Serialize, Deserialize)]
