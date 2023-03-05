@@ -51,14 +51,14 @@ impl UpdateType {
     pub fn value(&self) -> i32 {
         match *self {
             UpdateType::CustomerKex1 => 0,          // make output from customer
-            UpdateType::CustomerKex2 => 1,          // might need this later?
+            UpdateType::CustomerKex2 => 1,          // use this for funding kex
             UpdateType::CustomerKex3 => 2,          // might need this later?
             UpdateType::CustomerMultisigInfo => 3,  // prepare output from customer
             UpdateType::Deliver => 4,               // customer has received the item, released funds
             UpdateType::Hash => 5,                  // tx hash from funding the wallet order
             UpdateType::Ship => 6,                  // update ship date, app doesn't store tracking numbers
             UpdateType::VendorKex1 => 7,            // make output from vendor
-            UpdateType::VendorKex2 => 8,            // might need this later?
+            UpdateType::VendorKex2 => 8,            // use this for funding kex
             UpdateType::VendorKex3 => 9,            // might need this later?
             UpdateType::VendorMultisigInfo => 10,   // prepare output from vendor
             UpdateType::Quantity => 11,             // this can be updated until wallet is funded

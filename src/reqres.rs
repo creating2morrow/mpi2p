@@ -27,11 +27,25 @@ pub struct XmrRpcWalletParams {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcMakeParams {
+    pub multisig_info: Vec<String>,
+    pub threshold: u8,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct XmrRpcCreateRequest {
     pub jsonrpc: String,
     pub id: String,
     pub method: String,
     pub params: XmrRpcWalletParams,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcMakeRequest {
+    pub jsonrpc: String,
+    pub id: String,
+    pub method: String,
+    pub params: XmrRpcMakeParams,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -93,6 +107,30 @@ impl Default for XmrRpcPrepareResponse {
         }
     }
 }
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcMakeResult {
+    pub address: String,
+    pub multisig_info: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcMakeResponse {
+    pub result: XmrRpcMakeResult,
+}
+
+impl Default for XmrRpcMakeResponse {
+    fn default() -> Self {
+        XmrRpcMakeResponse {
+            result:
+            XmrRpcMakeResult {
+                address: String::from(""),
+                multisig_info: String::from(""),
+            }
+        }
+    }
+}
+
 // END XMR Structs
 
 #[derive(Serialize, Deserialize)]

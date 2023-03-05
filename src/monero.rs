@@ -214,6 +214,7 @@ pub async fn close_wallet(filename: String) -> bool {
 }
 
 // START Multisig
+
 /// Performs the xmr rpc 'prepare_multisig' method
 pub async fn prepare_wallet() -> reqres::XmrRpcPrepareResponse {
     info!("prepare msig wallet");
@@ -239,4 +240,36 @@ pub async fn prepare_wallet() -> reqres::XmrRpcPrepareResponse {
         Err(_) => Default::default()
     }
 }
+
+/// Performs the xmr rpc 'make_multisig' method
+pub async fn make_wallet(info: Vec<String>) -> reqres::XmrRpcMakeResponse {
+    info!("make msig wallet");
+    let client = reqwest::Client::new();
+    let host = get_rpc_host();
+    let params = reqres::XmrRpcMakeParams {
+        multisig_info: info,
+        threshold: 2,
+    };
+    let req = reqres::XmrRpcMakeRequest {
+        jsonrpc: RpcFields::JsonRpcVersion.value(),
+        id: RpcFields::Id.value(),
+        method: RpcFields::Prepare.value(),
+        params,
+    };
+    let login: RpcLogin = get_rpc_creds();
+    match client.post(host).json(&req)
+    .send_with_digest_auth(&login.username, &login.credential).await {
+        Ok(response) => {
+            // The result from wallet operation is empty
+            let res = response.json::<reqres::XmrRpcMakeResponse>().await;
+            debug!("make response: {:?}", res);
+            match res {
+                Ok(res) => res,
+                _ => Default::default(),
+            }
+        }
+        Err(_) => Default::default()
+    }
+}
+
 // END Multisig
