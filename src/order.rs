@@ -2,6 +2,7 @@ use crate::customer;
 use crate::models::*;
 use crate::monero;
 use crate::product;
+use crate::reqres;
 use crate::schema;
 use crate::utils;
 use crate::vendor;
@@ -52,18 +53,18 @@ enum UpdateType {
 impl UpdateType {
     pub fn value(&self) -> i32 {
         match *self {
-            UpdateType::CustomerKex1 => 0,          // make output from customer
-            UpdateType::CustomerKex2 => 1,          // use this for funding kex
-            UpdateType::CustomerKex3 => 2,          // might need this later?
-            UpdateType::CustomerMultisigInfo => 3,  // prepare output from customer
-            UpdateType::Deliver => 4,               // customer has received the item, released funds
-            UpdateType::Hash => 5,                  // tx hash from funding the wallet order
-            UpdateType::Ship => 6,                  // update ship date, app doesn't store tracking numbers
-            UpdateType::VendorKex1 => 7,            // make output from vendor
-            UpdateType::VendorKex2 => 8,            // use this for funding kex
-            UpdateType::VendorKex3 => 9,            // might need this later?
-            UpdateType::VendorMultisigInfo => 10,   // prepare output from vendor
-            UpdateType::Quantity => 11,             // this can be updated until wallet is funded
+            UpdateType::CustomerKex1 => 0,         // make output from customer
+            UpdateType::CustomerKex2 => 1,         // use this for funding kex
+            UpdateType::CustomerKex3 => 2,         // might need this later?
+            UpdateType::CustomerMultisigInfo => 3, // prepare output from customer
+            UpdateType::Deliver => 4,              // customer has received the item, released funds
+            UpdateType::Hash => 5,                 // tx hash from funding the wallet order
+            UpdateType::Ship => 6, // update ship date, app doesn't store tracking numbers
+            UpdateType::VendorKex1 => 7, // make output from vendor
+            UpdateType::VendorKex2 => 8, // use this for funding kex
+            UpdateType::VendorKex3 => 9, // might need this later?
+            UpdateType::VendorMultisigInfo => 10, // prepare output from vendor
+            UpdateType::Quantity => 11, // this can be updated until wallet is funded
         }
     }
 }
@@ -112,10 +113,8 @@ pub async fn create(cid: String, pid: String) -> Order {
     // create wallet for the order
 }
 
-
 // TODO: automate msig info injection into order by checking that
 // both vendor and customer have sent their info first.
-
 
 /// Modify order lifecycle
 pub async fn modify(_id: String, pid: String, data: String, update_type: i32) -> Order {
@@ -123,6 +122,16 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
     let t_id: String = String::from(&_id);
     let is_customer = is_customer(t_id);
     let connection = &mut utils::establish_pgdb_connection().await;
+    let old_search = orders
+        .filter(schema::orders::orid.eq(String::from(&_id)))
+        .first::<Order>(connection);
+    let old = match old_search {
+        Ok(r) => r,
+        _ => {
+            error!("error finding old order");
+            Default::default()
+        }
+    };
     // this else if chain is awful, TODO: refactor
     if update_type == UpdateType::CustomerKex1.value() && is_customer {
         info!("modify order customer kex 1");
@@ -153,11 +162,16 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
         };
     } else if update_type == UpdateType::CustomerMultisigInfo.value() && is_customer {
         info!("modify customer multisig info");
-        let m = diesel::update(orders.find(_id))
+        let m = diesel::update(orders.find(String::from(&_id)))
             .set(o_cust_msig_info.eq(data))
             .get_result::<Order>(connection);
         return match m {
-            Ok(m) => m,
+            Ok(m) => {
+                if old.o_vend_msig_info != String::from("") {
+                    prepare_and_make(connection, String::from(&_id), old).await;
+                }
+                m
+            }
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Deliver.value() && !is_customer {
@@ -224,11 +238,16 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
         };
     } else if update_type == UpdateType::VendorMultisigInfo.value() && !is_customer {
         info!("modify vendor multisig info");
-        let m = diesel::update(orders.find(_id))
+        let m = diesel::update(orders.find(String::from(&_id)))
             .set(o_vend_msig_info.eq(data))
             .get_result::<Order>(connection);
         return match m {
-            Ok(m) => m,
+            Ok(m) => {
+                if old.o_cust_msig_info != String::from("") {
+                    prepare_and_make(connection, String::from(&_id), old).await;
+                }
+                m
+            },
             Err(_e) => Default::default(),
         };
     } else if update_type == UpdateType::Quantity.value() && is_customer {
@@ -313,4 +332,28 @@ pub fn is_customer(id: String) -> bool {
     let first: char = id.chars().nth(0).unwrap();
     debug!("id starts with: {}", first);
     return first == 'C';
+}
+
+/// Attempt to update prepare and make multisig info for the app
+async fn prepare_and_make(connection: &mut PgConnection, _id: String, old: Order) {
+    use self::schema::orders::dsl::*;
+    let mut info: Vec<String> = Vec::new();
+    info.push(old.o_vend_msig_info);
+    let app_prepare: reqres::XmrRpcPrepareResponse = monero::prepare_wallet().await;
+    let prepare_update = diesel::update(orders.find(String::from(&_id)))
+        .set(o_msig_prepare.eq(String::from(&app_prepare.result.multisig_info)))
+        .get_result::<Order>(connection);
+    match prepare_update {
+        Ok(_) => info!("prepare info update"),
+        Err(_) => error!("error updating prepare info"),
+    };
+    info.push(String::from(&app_prepare.result.multisig_info));
+    let make: reqres::XmrRpcMakeResponse = monero::make_wallet(info).await;
+    let make_update = diesel::update(orders.find(_id))
+        .set(o_msig_kex_1.eq(make.result.multisig_info))
+        .get_result::<Order>(connection);
+    match make_update {
+        Ok(_) => info!("make info update"),
+        Err(_) => error!("error updating make info"),
+    };
 }
