@@ -93,16 +93,9 @@ pub async fn find(address: String) -> Vendor {
     let connection = &mut utils::establish_pgdb_connection().await;
     let results = vendors
         .filter(schema::vendors::v_xmr_address.eq(address))
-        .load::<Vendor>(connection);
+        .first::<Vendor>(connection);
     match results {
-        Ok(mut r) => {
-            if &r.len() > &0 {
-                info!("found vendor");
-                r.remove(0)
-            } else {
-                Default::default()
-            }
-        }
+        Ok(r) => r,
         _ => {
             error!("error finding vendor");
             Default::default()

@@ -47,18 +47,11 @@ async fn create(
 pub async fn find(address: String) -> Customer {
     use self::schema::customers::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
-    let results = customers
+    let result = customers
         .filter(schema::customers::c_xmr_address.eq(address))
-        .load::<Customer>(connection);
-    match results {
-        Ok(mut r) => {
-            info!("found customer");
-            if &r.len() > &0 {
-                r.remove(0)
-            } else {
-                Default::default()
-            }
-        }
+        .first::<Customer>(connection);
+    match result {
+        Ok(r) => r,
         _ => {
             error!("error finding customer");
             Default::default()

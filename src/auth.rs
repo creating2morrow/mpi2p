@@ -44,16 +44,9 @@ pub async fn find(address: String) -> Authorization {
     let connection = &mut utils::establish_pgdb_connection().await;
     let results = authorizations
         .filter(schema::authorizations::xmr_address.eq(address))
-        .load::<Authorization>(connection);
+        .first::<Authorization>(connection);
     match results {
-        Ok(mut r) => {
-            if &r.len() > &0 {
-                info!("found auth");
-                r.remove(0)
-            } else {
-                Default::default()
-            }
-        }
+        Ok(r) => r,
         _ => {
             error!("error finding auth");
             Default::default()

@@ -254,6 +254,22 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
     Default::default()
 }
 
+/// Lookup order
+pub async fn find(oid: String) -> Order {
+    use self::schema::orders::dsl::*;
+    let connection = &mut utils::establish_pgdb_connection().await;
+    let result = orders
+        .filter(schema::orders::orid.eq(oid))
+        .first::<Order>(connection);
+    match result {
+        Ok(r) => r,
+        _ => {
+            error!("error finding order");
+            Default::default()
+        }
+    }
+}
+
 /// Lookup all orders for customer or vendor
 pub async fn find_all(address: String, corv: String) -> Vec<Order> {
     use self::schema::orders::dsl::*;

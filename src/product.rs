@@ -52,16 +52,9 @@ pub async fn find(r_pid: String) -> Product {
     let connection = &mut utils::establish_pgdb_connection().await;
     let results = products
         .filter(schema::products::pid.eq(r_pid))
-        .load::<Product>(connection);
+        .first::<Product>(connection);
     match results {
-        Ok(mut r) => {
-            info!("found product");
-            if &r.len() > &0 {
-                r.remove(0)
-            } else {
-                Default::default()
-            }
-        }
+        Ok(r) => r,
         _ => {
             error!("error finding product");
             Default::default()
