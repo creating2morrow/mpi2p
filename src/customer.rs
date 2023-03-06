@@ -100,7 +100,6 @@ pub async fn verify_login(address: String, signature: String) -> Authorization {
     }
 }
 
-
 /// Update customer information
 pub async fn modify(_id: String, data: String, update_type: i32) -> Customer {
     use self::schema::customers::dsl::*;

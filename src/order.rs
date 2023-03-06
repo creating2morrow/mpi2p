@@ -116,6 +116,7 @@ pub async fn create(cid: String, pid: String) -> Order {
 // TODO: automate msig info injection into order by checking that
 // both vendor and customer have sent their info first.
 
+
 /// Modify order lifecycle
 pub async fn modify(_id: String, pid: String, data: String, update_type: i32) -> Order {
     use self::schema::orders::dsl::*;

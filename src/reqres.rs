@@ -30,6 +30,16 @@ pub struct XmrRpcFinalizeParams {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcImportParams {
+    pub info: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcSignMultisigParams {
+    pub tx_data_hex: String,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct XmrRpcBalanceParams {
     pub account_index: u8,
     pub address_indices: Vec<u8>,
@@ -77,6 +87,22 @@ pub struct XmrRpcFinalizeRequest {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcImportRequest {
+    pub jsonrpc: String,
+    pub id: String,
+    pub method: String,
+    pub params: XmrRpcImportParams,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
+pub struct XmrRpcSignMultisigRequest {
+    pub jsonrpc: String,
+    pub id: String,
+    pub method: String,
+    pub params: XmrRpcSignMultisigParams,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
 pub struct XmrRpcVerifyRequest {
     pub jsonrpc: String,
     pub id: String,
@@ -108,6 +134,21 @@ pub struct XmrRpcPrepareResult {
 pub struct XmrRpcMakeResult {
     pub address: String,
     pub multisig_info: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcExportResult {
+    pub info: String,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcImportResult {
+    pub n_outputs: u8,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcSignMultisigResult {
+    pub tx_hash_list: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -223,6 +264,54 @@ impl Default for XmrRpcFinalizeResponse {
             result:
             XmrRpcFinalizeResult {
                 address: String::from(""),
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcExportResponse {
+    pub result: XmrRpcExportResult,
+}
+
+impl Default for XmrRpcExportResponse {
+    fn default() -> Self {
+        XmrRpcExportResponse {
+            result:
+            XmrRpcExportResult {
+                info: String::from(""),
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcImportResponse {
+    pub result: XmrRpcImportResult,
+}
+
+impl Default for XmrRpcImportResponse {
+    fn default() -> Self {
+        XmrRpcImportResponse {
+            result:
+            XmrRpcImportResult {
+                n_outputs: 0,
+            }
+        }
+    }
+}
+
+#[derive(Deserialize, Debug)]
+pub struct XmrRpcSignMultisigResponse {
+    pub result: XmrRpcSignMultisigResult,
+}
+
+impl Default for XmrRpcSignMultisigResponse {
+    fn default() -> Self {
+        XmrRpcSignMultisigResponse {
+            result:
+            XmrRpcSignMultisigResult {
+                tx_hash_list:Vec::new(),
             }
         }
     }

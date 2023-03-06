@@ -14,13 +14,16 @@ enum RpcFields {
     Balance,
     Create,
     Close,
+    Export,
     Finalize,
     GetVersion,
     Id,
+    Import,
     JsonRpcVersion,
     Make,
     Open,
     Prepare,
+    SignMultisig,
     Verify,
 }
 
@@ -30,13 +33,16 @@ impl RpcFields {
             RpcFields::Balance => String::from("get_balance"),
             RpcFields::Create => String::from("create_wallet"),
             RpcFields::Close => String::from("close_wallet"),
+            RpcFields::Export => String::from("export_multisig_info"),
             RpcFields::Finalize => String::from("finalize_multisig"),
             RpcFields::GetVersion => String::from("get_version"),
             RpcFields::Id => String::from("0"),
+            RpcFields::Import => String::from("import_multisig_info"),
             RpcFields::JsonRpcVersion => String::from("2.0"),
             RpcFields::Make => String::from("make_multisig"),
             RpcFields::Open => String::from("open_wallet"),
             RpcFields::Prepare => String::from("prepare_multisig"),
+            RpcFields::SignMultisig => String::from("sign_multisig"),
             RpcFields::Verify => String::from("verify"),
         }
     }
@@ -188,7 +194,7 @@ pub async fn open_wallet(filename: String) -> bool {
     }
 }
 
-/// Performs the xmr rpc 'verify' method
+/// Performs the xmr rpc 'close_wallet' method
 pub async fn close_wallet(filename: String) -> bool {
     info!("closing wallet for order {}", &filename);
     let client = reqwest::Client::new();
@@ -219,6 +225,34 @@ pub async fn close_wallet(filename: String) -> bool {
     }
 }
 
+/// Performs the xmr rpc 'get_balance' method
+pub async fn get_balance() -> reqres::XmrRpcBalanceResponse {
+    info!("fetching wallet balance");
+    let client = reqwest::Client::new();
+    let host = get_rpc_host();
+    let params: reqres::XmrRpcBalanceParams = reqres::XmrRpcBalanceParams { 
+        account_index: 0, address_indices: vec![0], all_accounts: false, strict: false, 
+    };
+    let req = reqres::XmrRpcBalanceRequest {
+        jsonrpc: RpcFields::JsonRpcVersion.value(),
+        id: RpcFields::Id.value(),
+        method: RpcFields::Balance.value(),
+        params,
+    };
+    let login: RpcLogin = get_rpc_creds();
+    match client.post(host).json(&req)
+    .send_with_digest_auth(&login.username, &login.credential).await {
+        Ok(response) => {
+            let res = response.json::<reqres::XmrRpcBalanceResponse>().await;
+            debug!("balance response: {:?}", res);
+            match res {
+                Ok(res) => res,
+                _ => Default::default(),
+            }
+        }
+        Err(_) => Default::default()
+    }
+}
 // START Multisig
 
 /// Performs the xmr rpc 'prepare_multisig' method
@@ -305,26 +339,22 @@ pub async fn finalize_wallet(info: Vec<String>) -> reqres::XmrRpcFinalizeRespons
     }
 }
 
-/// Performs the xmr rpc 'get_balance' method
-pub async fn get_balance() -> reqres::XmrRpcBalanceResponse {
-    info!("fetching wallet balance");
+/// Performs the xmr rpc 'export_multisig_info' method
+pub async fn export_multisig_info() -> reqres::XmrRpcExportResponse {
+    info!("export msig info");
     let client = reqwest::Client::new();
     let host = get_rpc_host();
-    let params: reqres::XmrRpcBalanceParams = reqres::XmrRpcBalanceParams { 
-        account_index: 0, address_indices: vec![0], all_accounts: false, strict: false, 
-    };
-    let req = reqres::XmrRpcBalanceRequest {
+    let req = reqres::XmrRpcRequest {
         jsonrpc: RpcFields::JsonRpcVersion.value(),
         id: RpcFields::Id.value(),
-        method: RpcFields::Balance.value(),
-        params,
+        method: RpcFields::Export.value(),
     };
     let login: RpcLogin = get_rpc_creds();
     match client.post(host).json(&req)
     .send_with_digest_auth(&login.username, &login.credential).await {
         Ok(response) => {
-            let res = response.json::<reqres::XmrRpcBalanceResponse>().await;
-            debug!("balance response: {:?}", res);
+            let res = response.json::<reqres::XmrRpcExportResponse>().await;
+            debug!("export msig response: {:?}", res);
             match res {
                 Ok(res) => res,
                 _ => Default::default(),
@@ -333,9 +363,62 @@ pub async fn get_balance() -> reqres::XmrRpcBalanceResponse {
         Err(_) => Default::default()
     }
 }
-/*
-    TODO:
-        - export / import multisig info
-        - sign multisig txset
- */
+
+/// Performs the xmr rpc 'import_multisig_info' method
+pub async fn import_multisig_info(info: Vec<String>) -> reqres::XmrRpcImportResponse {
+    info!("import msig wallet");
+    let client = reqwest::Client::new();
+    let host = get_rpc_host();
+    let params = reqres::XmrRpcImportParams {
+        info,
+    };
+    let req = reqres::XmrRpcImportRequest {
+        jsonrpc: RpcFields::JsonRpcVersion.value(),
+        id: RpcFields::Id.value(),
+        method: RpcFields::Import.value(),
+        params,
+    };
+    let login: RpcLogin = get_rpc_creds();
+    match client.post(host).json(&req)
+    .send_with_digest_auth(&login.username, &login.credential).await {
+        Ok(response) => {
+            let res = response.json::<reqres::XmrRpcImportResponse>().await;
+            debug!("import msig info response: {:?}", res);
+            match res {
+                Ok(res) => res,
+                _ => Default::default(),
+            }
+        }
+        Err(_) => Default::default()
+    }
+}
+
+/// Performs the xmr rpc 'sign_multisig' method
+pub async fn sign_multisig(tx_data_hex: String) -> reqres::XmrRpcSignMultisigResponse {
+    info!("sign msig txset");
+    let client = reqwest::Client::new();
+    let host = get_rpc_host();
+    let params = reqres::XmrRpcSignMultisigParams {
+        tx_data_hex,
+    };
+    let req = reqres::XmrRpcSignMultisigRequest {
+        jsonrpc: RpcFields::JsonRpcVersion.value(),
+        id: RpcFields::Id.value(),
+        method: RpcFields::SignMultisig.value(),
+        params,
+    };
+    let login: RpcLogin = get_rpc_creds();
+    match client.post(host).json(&req)
+    .send_with_digest_auth(&login.username, &login.credential).await {
+        Ok(response) => {
+            let res = response.json::<reqres::XmrRpcSignMultisigResponse>().await;
+            debug!("sign msig txset response: {:?}", res);
+            match res {
+                Ok(res) => res,
+                _ => Default::default(),
+            }
+        }
+        Err(_) => Default::default()
+    }
+}
 // END Multisig
