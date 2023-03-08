@@ -83,7 +83,7 @@ is screened accordingly. The login API is used to get the random data.
 ### Authorization
 
 * protected APIs currently require address/signature path parameters
-* `token: <JWT(claim:ADDRESS:EXPIRATIONa)>` on subsequent requests
+* `token: <JWT(claim:ADDRESS:EXPIRATION)>` on subsequent requests
 * address must match the one on file during login
 * if auth expiration then new data must be signed (default : 60 minutes)
 * call the login API again to refresh and sign new data
@@ -111,9 +111,7 @@ is screened accordingly. The login API is used to get the random data.
 * [x] Order APIs / Monero Multisignature integration
 * [x] Automate I2P tunnel creation, etc.
 * [x] From_Request Async Trait Authorization flow
-* [ ] Unit tests - 4/23
-* [ ] Functional tests - 4/23
-* [ ] Pentest - 4/23
+* [ ] Tests - 4/23
 * [ ] Documentation - 4/23
 * [ ] GUI - 5/23
 * [ ] Beta release v0.1.0-beta 6/23
