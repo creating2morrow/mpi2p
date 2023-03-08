@@ -47,6 +47,12 @@ curl -X PATCH http://127.0.0.1:8000/product/<XMR_ADDRESS>/update/<pid>/<data>/<u
 # intialize an order for a customer
 curl -iv http://127.0.0.1:8000/order/<XMR_ADDRESS>/create/<pid> -H 'token: <JWT>'
 
+# [GET]
+# get all orders
+# xmr address
+# customer | vendor
+curl -iv http://127.0.0.1:8000/orders/<XMR_ADDRESS>/<customer | vendor> -H 'token: <JWT>'
+
 # [PATCH]
 # modify order
 #           UpdateType::CustomerKex1 => 0,         // make output from customer
@@ -62,5 +68,5 @@ curl -iv http://127.0.0.1:8000/order/<XMR_ADDRESS>/create/<pid> -H 'token: <JWT>
 #           UpdateType::VendorKex3 => 10,          // might need this later?
 #           UpdateType::VendorMultisigInfo => 11,  // prepare output from vendor
 #           UpdateType::Quantity => 12,            // this can be updated until wallet is funded
-curl -iv http://127.0.0.1:8000/order/<XMR_ADDRESS>/update/<pid>/<oid>/<data>/<update_type> -H 'token: <JWT>'
+curl -X PATCH http://127.0.0.1:8000/order/<XMR_ADDRESS>/update/<pid>/<oid>/<data>/<update_type> -H 'token: <JWT>'
 ```

@@ -63,7 +63,7 @@ Maybe one day
 
 ## API Examples
 
-* see [api.md](./api.md)
+* see [curl.md](./curl.md)
 * curl or vscodium http rest client plugin
 
 ## Authentication / Authorization Lifecycle
@@ -101,7 +101,6 @@ is screened accordingly. The login API is used to get the random data.
 * customer recieves product and signs multisig transaction
 * vendors signs and submits multisig transaction
 * disputes handled on case-by-case basis, app can sign disputes only
-* {in-progress} - detailed flow
 
 ## Status
 
@@ -111,7 +110,6 @@ is screened accordingly. The login API is used to get the random data.
 * [x] Order APIs / Monero Multisignature integration
 * [x] Automate I2P tunnel creation, etc.
 * [x] From_Request Async Trait Authorization flow
-* [ ] Tests - 4/23
-* [ ] Documentation - 4/23
+* [ ] Tests / Docs - 4/23
 * [ ] GUI - 5/23
 * [ ] Beta release v0.1.0-beta 6/23
