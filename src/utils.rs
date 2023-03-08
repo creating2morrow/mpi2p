@@ -74,3 +74,10 @@ pub fn get_release_env() -> ReleaseEnvironment {
         return ReleaseEnvironment::Development;
     }
 }
+
+/// Helper for separation of dev and prod concerns
+pub fn get_jwt_secret_key() -> Vec<u8> {
+    let args = args::Args::parse();
+    let key = String::from(args.jwt_secret_key);
+    key.into_bytes()
+}

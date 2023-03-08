@@ -48,4 +48,11 @@ pub struct Args {
         default_value = "60"
     )]
     pub token_timeout: i64,
+    /// JWT Secret Key
+    #[arg(
+        short,
+        long,
+        help = "Set a secret for signing JWTs",
+    )]
+    pub jwt_secret_key: String,
 }

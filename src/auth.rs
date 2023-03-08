@@ -137,7 +137,8 @@ fn get_auth_expiration() -> i64 {
 }
 
 fn create_token(address: String, created: i64) -> String {
-    let key: Hmac<Sha384> = Hmac::new_from_slice(b"some-secret")
+    let jwt_secret_key = utils::get_jwt_secret_key();
+    let key: Hmac<Sha384> = Hmac::new_from_slice(&jwt_secret_key)
         .expect("hash");
     let header = Header {
         algorithm: AlgorithmType::Hs384,
@@ -175,7 +176,8 @@ impl<'r> FromRequest<'r> for BearerToken {
         match token {
             Some(token) => {
                 // check validity
-                let key: Hmac<Sha384> = Hmac::new_from_slice(b"some-secret").expect("");
+                let jwt_secret_key = utils::get_jwt_secret_key();
+                let key: Hmac<Sha384> = Hmac::new_from_slice(&jwt_secret_key).expect("");
                 let jwt: Token<Header, BTreeMap<String, String>, _> = token.verify_with_key(&key)
                     .expect("expected verify with key");
                 let claims = jwt.claims();

@@ -9,7 +9,7 @@ i2p marketplace api standards bootstrap
 
 ## I2P (invisble internet)
 
-* automated tunnel controll
+* automated tunnel control
 * i2p-zero
 
 ## Rustlang
