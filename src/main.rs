@@ -17,10 +17,13 @@ async fn rocket() -> _ {
     // postgres required to be up at boot time
     utils::establish_pgdb_connection().await;
     monero::check_rpc_connection().await;
-    i2p::start().await;
-    tokio::time::sleep(Duration::new(59, 0)).await;
-    i2p::create_tunnel().await;
     let env: String = utils::get_release_env().value();
+    let dev: String = utils::ReleaseEnvironment::Development.value();
+    if env != dev {
+        i2p::start().await;
+        tokio::time::sleep(Duration::new(59, 0)).await;
+        i2p::create_tunnel().await;
+    }
     info!("{} - mpi2p is online", env);
     rocket::build()
         .mount("/", routes![controller::login])
