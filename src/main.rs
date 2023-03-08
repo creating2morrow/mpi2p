@@ -1,7 +1,10 @@
 #[macro_use]
 extern crate rocket;
+
+use std::time::Duration;
 use mpi2p::*;
 use log::info;
+
 #[cfg(test)]
 mod tests;
 
@@ -14,9 +17,10 @@ async fn rocket() -> _ {
     // postgres required to be up at boot time
     utils::establish_pgdb_connection().await;
     monero::check_rpc_connection().await;
+    i2p::start().await;
+    tokio::time::sleep(Duration::new(59, 0)).await;
+    i2p::create_tunnel().await;
     let env: String = utils::get_release_env().value();
-    let dev: String = utils::ReleaseEnvironment::Development.value();
-    if env != dev { tokio::spawn(async { i2p::check_connection().await }); }
     info!("{} - mpi2p is online", env);
     rocket::build()
         .mount("/", routes![controller::login])

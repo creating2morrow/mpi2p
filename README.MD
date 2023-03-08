@@ -112,7 +112,7 @@ is screened accordingly. The login API is used to get the random data.
 * [x] Vendor APIs
 * [x] Product APIs
 * [x] Order APIs / Monero Multisignature integration - 3/23
-* [ ] Automate I2P tunnel creation, start/stop, etc. - 3/23
+* [x] Automate I2P tunnel creation, etc. - 3/23
 * [ ] From_Request Async Trait Authorization flow - 4/23
 * [ ] Unit tests - 5/23
 * [ ] Functional tests - 5/23
