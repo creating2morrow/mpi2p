@@ -9,30 +9,20 @@ use crate::vendor;
 use diesel::prelude::*;
 use log::{debug, error, info};
 
-// TODO: dispute handling logic
-
 enum StatusType {
     Delivered,
-    // Dispute,
-    // Error,
     MultisigMissing,
     MulitsigComplete,
-    // Signed,
     Shipped,
-    // Submitted,
 }
 
 impl StatusType {
     pub fn value(&self) -> String {
         match *self {
             StatusType::Delivered => String::from("Delivered"),
-            // StatusType::Dispute => String::from("Dispute"),
-            // StatusType::Error => String::from("Error"),
             StatusType::MultisigMissing => String::from("MultisigMissing"),
             StatusType::MulitsigComplete => String::from("MulitsigComplete"),
-            // StatusType::Signed => String::from("Signed"),
             StatusType::Shipped => String::from("Shipped"),
-            // StatusType::Submitted => String::from("Submitted"),
         }
     }
 }
@@ -59,7 +49,7 @@ impl UpdateType {
             UpdateType::CustomerKex2 => 1,         // use this for funding kex
             UpdateType::CustomerKex3 => 2,         // might need this later?
             UpdateType::CustomerMultisigInfo => 3, // prepare output from customer
-            UpdateType::Deliver => 4,              // customer has received the item, released funds
+            UpdateType::Deliver => 4,              // customer has received the item, released txset
             UpdateType::Hash => 5,                 // tx hash from funding the wallet order
             UpdateType::Ship => 6,                 // update ship date, app doesn't store tracking numbers
             UpdateType::VendorKex1 => 7,           // make output from vendor
@@ -188,12 +178,12 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
         };
     } else if update_type == UpdateType::Deliver.value() && !is_customer {
         info!("modify devliver date");
-        let deliver_date = match data.parse::<i64>() {
-            Ok(n) => n,
-            Err(_e) => 0,
-        };
+        let deliver_date = chrono::offset::Utc::now().timestamp();
         let m = diesel::update(orders.find(_id))
-            .set((o_deliver_date.eq(deliver_date), o_status.eq(StatusType::Delivered.value())))
+            .set((o_deliver_date.eq(deliver_date), 
+                o_status.eq(StatusType::Delivered.value()),
+                o_cust_msig_txset.eq(data)
+            ))
             .get_result::<Order>(connection);
         return match m {
             Ok(m) => m,

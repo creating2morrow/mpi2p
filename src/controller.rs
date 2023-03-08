@@ -3,7 +3,7 @@ use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
 
-use crate::auth;
+use crate::{auth, dispute};
 use crate::customer;
 use crate::models;
 use crate::monero;
@@ -228,6 +228,43 @@ pub async fn get_orders(
     Custom(
         Status::Ok,
         Json(reqres::GetOrdersResponse::build(m_orders)),
+    )
+}
+
+/// Create a dispute
+#[get("/<address>/<signature>/create/<oid>/<txset>")]
+pub async fn create_dispute(
+    address: String,
+    signature: String,
+    oid: String,
+    txset: String,
+) -> Custom<Json<reqres::GetDisputeResponse>> {
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
+    if !is_verified {
+        return Custom(Status::Unauthorized, Json(Default::default()));
+    }
+    let m_dispute: models::Dispute = dispute::create(oid, txset).await;
+    Custom(
+        Status::Ok,
+        Json(reqres::GetDisputeResponse::build(m_dispute)),
+    )
+}
+
+/// Create a dispute
+#[get("/<address>/<signature>/<oid>")]
+pub async fn get_dispute(
+    address: String,
+    signature: String,
+    oid: String,
+) -> Custom<Json<reqres::GetDisputeResponse>> {
+    let is_verified: bool = auth::verify_access(&address, &signature).await;
+    if !is_verified {
+        return Custom(Status::Unauthorized, Json(Default::default()));
+    }
+    let m_dispute: models::Dispute = dispute::find(oid).await;
+    Custom(
+        Status::Ok,
+        Json(reqres::GetDisputeResponse::build(m_dispute)),
     )
 }
 // END JSON APIs

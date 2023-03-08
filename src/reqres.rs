@@ -416,6 +416,24 @@ impl Default for GetAuthResponse {
 
 #[derive(Serialize, Deserialize)]
 #[serde(crate = "rocket::serde")]
+pub struct GetDisputeResponse {
+    pub orid: String,
+    pub created: i64,
+    pub tx_set: String,
+}
+
+impl Default for GetDisputeResponse {
+    fn default() -> Self {
+        GetDisputeResponse {
+            orid: String::from(""),
+            created: 0,
+            tx_set: String::from(""),
+        }
+    }
+}
+
+#[derive(Serialize, Deserialize)]
+#[serde(crate = "rocket::serde")]
 pub struct GetOrderResponse {
     pub orid: String,
     pub pid: String,
@@ -513,6 +531,16 @@ impl GetAuthResponse {
             address: m_auth.xmr_address,
             data: m_auth.rnd,
             created: m_auth.created,
+        }
+    }
+}
+
+impl GetDisputeResponse {
+    pub fn build(m_dispute: models::Dispute) -> Self {
+        GetDisputeResponse {
+            orid: m_dispute.orid,
+            created: m_dispute.created,
+            tx_set: m_dispute.tx_set,
         }
     }
 }

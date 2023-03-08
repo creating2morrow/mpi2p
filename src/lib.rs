@@ -2,6 +2,7 @@ pub mod args;       // Command line arguments
 pub mod auth;       // Authorization repo/service layer
 pub mod controller; // HTTP entry point
 pub mod customer;   // Customer repo/service layer
+pub mod dispute;    // Dispute repo/service layer
 pub mod i2p;        // I2P repo/service layer
 pub mod models;     // Models for database query/insertion
 pub mod monero;     // Monero-wallet-rpc interface

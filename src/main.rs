@@ -24,7 +24,8 @@ async fn rocket() -> _ {
         .mount("/vendor", routes![controller::get_vendor, controller::update_vendor])
         .mount("/product", routes![controller::create_product, controller::update_product])
         .mount("/products", routes![controller::get_vendor_products])
-        .mount("/order", routes![controller::initialize_order /*controller::update_order*/])
+        .mount("/order", routes![controller::initialize_order, controller::update_order])
         .mount("/orders", routes![controller::get_orders])
         .mount("/xmr", routes![controller::get_version])
+        .mount("/dispute", routes![controller::create_dispute, controller::get_dispute])
 }

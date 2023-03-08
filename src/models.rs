@@ -157,6 +157,25 @@ impl Default for Authorization {
     }
 }
 
+#[derive(Queryable, Debug)]
+pub struct Dispute {
+    pub did: String,
+    pub created: i64,
+    pub orid: String,
+    pub tx_set: String,
+}
+
+impl Default for Dispute {
+    fn default() -> Self {
+        Dispute {
+            did: String::from(""),
+            created: 0,
+            orid: String::from(""),
+            tx_set: String::from(""),
+        }
+    }
+}
+
 use crate::schema;
 
 #[derive(Insertable, Debug)]
@@ -198,6 +217,15 @@ pub struct NewAuthorization<'a> {
     pub created: &'a i64,
     pub rnd: &'a str,
     pub xmr_address: &'a str,
+}
+
+#[derive(Insertable, Debug)]
+#[diesel(table_name = schema::disputes)]
+pub struct NewDispute<'a> {
+    pub did: &'a str,
+    pub created: &'a i64,
+    pub orid: &'a str,
+    pub tx_set: &'a str,
 }
 
 #[derive(Insertable, Debug)]

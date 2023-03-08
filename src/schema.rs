@@ -19,6 +19,15 @@ diesel::table! {
 }
 
 diesel::table! {
+    disputes (did) {
+        did -> Varchar,
+        created -> Int8,
+        orid -> Varchar,
+        tx_set -> Varchar,
+    }
+}
+
+diesel::table! {
     orders (orid) {
         orid -> Varchar,
         c_id -> Varchar,
@@ -78,6 +87,7 @@ diesel::joinable!(orders -> products (p_id));
 diesel::allow_tables_to_appear_in_same_query!(
     authorizations,
     customers,
+    disputes,
     orders,
     products,
     vendors,
