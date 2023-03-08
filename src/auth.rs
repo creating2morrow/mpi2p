@@ -156,6 +156,7 @@ pub struct BearerToken(String);
 
 #[derive(Debug)]
 pub enum BearerTokenError {
+    Expired,
     Missing,
     Invalid,
 }
@@ -183,6 +184,14 @@ impl<'r> FromRequest<'r> for BearerToken {
                     return Outcome::Failure((Status::Unauthorized, BearerTokenError::Invalid))
                 }
                 // verify expiration
+                let now: i64 = chrono::offset::Utc::now().timestamp();
+                let expire = match claims["expiration"].parse::<i64>() {
+                    Ok(n) => n,
+                    Err(_e) => 0,
+                };
+                if now > expire {
+                    return Outcome::Failure((Status::Unauthorized, BearerTokenError::Expired)) 
+                }
                 Outcome::Success(BearerToken(String::from(token)))
             }
             None => Outcome::Failure((Status::Unauthorized, BearerTokenError::Missing)),

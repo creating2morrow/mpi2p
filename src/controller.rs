@@ -1,10 +1,8 @@
-use log::debug;
-use rocket::{get, patch};
 use rocket::http::Status;
 use rocket::response::status::Custom;
 use rocket::serde::json::Json;
+use rocket::{get, patch};
 
-use crate::{auth, dispute};
 use crate::customer;
 use crate::models;
 use crate::monero;
@@ -12,6 +10,7 @@ use crate::order;
 use crate::product;
 use crate::reqres;
 use crate::vendor;
+use crate::{auth, dispute};
 
 // JSON APIs
 
@@ -25,28 +24,26 @@ pub async fn get_version() -> Custom<Json<reqres::XmrRpcVersionResponse>> {
 /// Return a single customer's information
 /// Protected: true
 #[get("/<address>")]
-pub async fn get_customer
-(address: String,
-token: auth::BearerToken)
--> Custom<Json<reqres::GetCustomerResponse>> {
-    debug!("token: {:?}", token);
+pub async fn get_customer(
+    address: String,
+    _token: auth::BearerToken,
+) -> Custom<Json<reqres::GetCustomerResponse>> {
     let m_customer: models::Customer = customer::find(address).await;
-    Custom(Status::Ok,Json(reqres::GetCustomerResponse::build(m_customer)))
+    Custom(
+        Status::Ok,
+        Json(reqres::GetCustomerResponse::build(m_customer)),
+    )
 }
 
 /// Get a single vendor's information
 /// Protected: true
-#[get("/<address>/<signature>")]
-pub async fn get_vendor(address: String, signature: String) -> Custom<Json<reqres::GetVendorResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
+#[get("/<address>")]
+pub async fn get_vendor(
+    address: String,
+    _token: auth::BearerToken,
+) -> Custom<Json<reqres::GetVendorResponse>> {
     let m_vendor: models::Vendor = vendor::find(address).await;
-    Custom(
-        Status::Ok,
-        Json(reqres::GetVendorResponse::build(m_vendor)),
-    )
+    Custom(Status::Ok, Json(reqres::GetVendorResponse::build(m_vendor)))
 }
 
 /// Login with wallet signature
@@ -64,17 +61,13 @@ pub async fn login(
 }
 
 /// Update customer information
-#[patch("/<address>/<signature>/update/<data>/<update_type>")]
+#[patch("/<address>/update/<data>/<update_type>")]
 pub async fn update_customer(
     address: String,
     data: String,
-    signature: String,
+    _token: auth::BearerToken,
     update_type: i32,
 ) -> Custom<Json<reqres::GetCustomerResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
     let c: models::Customer = customer::find(address).await;
     let m_customer: models::Customer = customer::modify(c.cid, data, update_type).await;
     Custom(
@@ -84,35 +77,24 @@ pub async fn update_customer(
 }
 
 /// Update vendor information
-#[patch("/<address>/<signature>/update/<data>/<update_type>")]
+#[patch("/<address>/update/<data>/<update_type>")]
 pub async fn update_vendor(
     address: String,
-    signature: String,
+    _token: auth::BearerToken,
     data: String,
     update_type: i32,
 ) -> Custom<Json<reqres::GetVendorResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
     let v: models::Vendor = vendor::find(address).await;
     let m_vendor: models::Vendor = vendor::modify(v.vid, data, update_type).await;
-    Custom(
-        Status::Ok,
-        Json(reqres::GetVendorResponse::build(m_vendor)),
-    )
+    Custom(Status::Ok, Json(reqres::GetVendorResponse::build(m_vendor)))
 }
 
-/// Create a product by passing vendor auth
-#[get("/<address>/<signature>/create")]
+/// Create a product by passing vendor address
+#[get("/<address>/create")]
 pub async fn create_product(
     address: String,
-    signature: String,
+    _token: auth::BearerToken,
 ) -> Custom<Json<reqres::GetProductResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
     let v: models::Vendor = vendor::find(address).await;
     let m_product: models::Product = product::create(v.vid).await;
     Custom(
@@ -121,16 +103,12 @@ pub async fn create_product(
     )
 }
 
-/// Get all products by passing vendor auth
-#[get("/<address>/<signature>")]
+/// Get all products by passing vendor address
+#[get("/<address>")]
 pub async fn get_vendor_products(
     address: String,
-    signature: String,
+    _token: auth::BearerToken,
 ) -> Custom<Json<reqres::GetVendorProductsResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
     let m_vendor: models::Vendor = vendor::find(address).await;
     let m_products: Vec<models::Product> = product::find_all(m_vendor.vid).await;
     Custom(
@@ -140,18 +118,14 @@ pub async fn get_vendor_products(
 }
 
 /// Update product information
-#[patch("/<address>/<signature>/update/<pid>/<data>/<update_type>")]
+#[patch("/<_address>/update/<pid>/<data>/<update_type>")]
 pub async fn update_product(
-    address: String,
+    _address: String,
     pid: String,
-    signature: String,
+    _token: auth::BearerToken,
     data: String,
     update_type: i32,
 ) -> Custom<Json<reqres::GetProductResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
     let m_product: models::Product = product::modify(pid, data, update_type).await;
     Custom(
         Status::Ok,
@@ -160,16 +134,12 @@ pub async fn update_product(
 }
 
 /// Initialize order
-#[get("/<address>/<signature>/create/<pid>")]
+#[get("/<address>/create/<pid>")]
 pub async fn initialize_order(
     address: String,
-    signature: String,
+    _token: auth::BearerToken,
     pid: String,
 ) -> Custom<Json<reqres::GetOrderResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
     // get the cid from the address after verification
     let m_customer = customer::find(address).await;
     let temp_pid = String::from(&pid);
@@ -181,19 +151,15 @@ pub async fn initialize_order(
 }
 
 /// Update order information
-#[patch("/<address>/<signature>/update/<pid>/<oid>/<data>/<update_type>")]
+#[patch("/<_address>/update/<pid>/<oid>/<data>/<update_type>")]
 pub async fn update_order(
-    address: String,
+    _address: String,
     oid: String,
     pid: String,
-    signature: String,
+    _token: auth::BearerToken,
     data: String,
     update_type: i32,
 ) -> Custom<Json<reqres::GetOrderResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
     let temp_pid: String = String::from(&pid);
     let m_order: models::Order = order::modify(oid, pid, data, update_type).await;
     Custom(
@@ -204,35 +170,24 @@ pub async fn update_order(
 
 /// Get all orders
 ///  by passing auth
-#[get("/<corv>/<address>/<signature>")]
+#[get("/<address>/<corv>")]
 pub async fn get_orders(
     address: String,
     corv: String,
-    signature: String,
+    _token: auth::BearerToken,
 ) -> Custom<Json<reqres::GetOrdersResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
     let m_orders: Vec<models::Order> = order::find_all(address, corv).await;
-    Custom(
-        Status::Ok,
-        Json(reqres::GetOrdersResponse::build(m_orders)),
-    )
+    Custom(Status::Ok, Json(reqres::GetOrdersResponse::build(m_orders)))
 }
 
 /// Create a dispute
-#[get("/<address>/<signature>/create/<oid>/<txset>")]
+#[get("/<_address>/create/<oid>/<txset>")]
 pub async fn create_dispute(
-    address: String,
-    signature: String,
+    _address: String,
+    _token: auth::BearerToken,
     oid: String,
     txset: String,
 ) -> Custom<Json<reqres::GetDisputeResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
     let m_dispute: models::Dispute = dispute::create(oid, txset).await;
     Custom(
         Status::Ok,
@@ -241,16 +196,12 @@ pub async fn create_dispute(
 }
 
 /// Create a dispute
-#[get("/<address>/<signature>/<oid>")]
+#[get("/<_address>/<oid>")]
 pub async fn get_dispute(
-    address: String,
-    signature: String,
+    _address: String,
+    _token: auth::BearerToken,
     oid: String,
 ) -> Custom<Json<reqres::GetDisputeResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
     let m_dispute: models::Dispute = dispute::find(oid).await;
     Custom(
         Status::Ok,
