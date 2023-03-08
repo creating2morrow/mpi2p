@@ -28,6 +28,7 @@ CREATE TABLE orders (
   o_msig_kex_1 TEXT NOT NULL,
   o_msig_kex_2 TEXT NOT NULL,
   o_msig_kex_3 TEXT NOT NULL,
+  o_subaddress VARCHAR NOT NULL,
   o_status TEXT NOT NULL,
   o_quantity BIGINT NOT NULL,
   o_vend_kex_1 VARCHAR NOT NULL,

@@ -35,6 +35,7 @@ enum UpdateType {
     Deliver,
     Hash,
     Ship,
+    Subaddress,
     VendorKex1,
     VendorKex2,
     VendorKex3,
@@ -52,11 +53,12 @@ impl UpdateType {
             UpdateType::Deliver => 4,              // customer has received the item, released txset
             UpdateType::Hash => 5,                 // tx hash from funding the wallet order
             UpdateType::Ship => 6,                 // update ship date, app doesn't store tracking numbers
-            UpdateType::VendorKex1 => 7,           // make output from vendor
-            UpdateType::VendorKex2 => 8,           // use this for funding kex
-            UpdateType::VendorKex3 => 9,           // might need this later?
-            UpdateType::VendorMultisigInfo => 10,  // prepare output from vendor
-            UpdateType::Quantity => 11,            // this can be updated until wallet is funded
+            UpdateType::Subaddress => 7,           // update address for payout
+            UpdateType::VendorKex1 => 8,           // make output from vendor
+            UpdateType::VendorKex2 => 9,           // use this for funding kex
+            UpdateType::VendorKex3 => 10,          // might need this later?
+            UpdateType::VendorMultisigInfo => 11,  // prepare output from vendor
+            UpdateType::Quantity => 12,            // this can be updated until wallet is funded
         }
     }
 }
@@ -88,6 +90,7 @@ pub async fn create(cid: String, pid: String) -> Order {
         o_msig_kex_1: "",
         o_msig_kex_2: "",
         o_msig_kex_3: "",
+        o_subaddress: "",
         o_status: &StatusType::MultisigMissing.value(),
         o_quantity: &0,
         o_vend_kex_1: "",
@@ -206,6 +209,15 @@ pub async fn modify(_id: String, pid: String, data: String, update_type: i32) ->
         };
         let m = diesel::update(orders.find(_id))
             .set((o_ship_date.eq(ship_date), o_status.eq(StatusType::Shipped.value())))
+            .get_result::<Order>(connection);
+        return match m {
+            Ok(m) => m,
+            Err(_e) => Default::default(),
+        };
+    } else if update_type == UpdateType::Subaddress.value() && !is_customer {
+        info!("modify order subaddress");
+        let m = diesel::update(orders.find(_id))
+            .set(o_subaddress.eq(data))
             .get_result::<Order>(connection);
         return match m {
             Ok(m) => m,

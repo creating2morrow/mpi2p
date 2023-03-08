@@ -96,13 +96,14 @@ pub struct Order {
     pub o_msig_kex_1: String,
     pub o_msig_kex_2: String,
     pub o_msig_kex_3: String,
+    pub o_subaddress: String,
     pub o_status: String,
     pub o_quantity: i64,
     pub o_vend_kex_1: String,
     pub o_vend_kex_2: String,
     pub o_vend_kex_3: String,
     pub o_vend_msig_info: String,
-    pub o_vend_msig_txset: String
+    pub o_vend_msig_txset: String,
 }
 
 impl Default for Order {
@@ -127,6 +128,7 @@ impl Default for Order {
             o_msig_kex_1: String::from(""),
             o_msig_kex_2: String::from(""),
             o_msig_kex_3: String::from(""),
+            o_subaddress: String::from(""),
             o_status: String::from(""),
             o_quantity: 0,
             o_vend_kex_1: String::from(""),
@@ -253,6 +255,7 @@ pub struct NewOrder<'a> {
     pub o_msig_kex_1: &'a str,
     pub o_msig_kex_2: &'a str,
     pub o_msig_kex_3: &'a str,
+    pub o_subaddress: &'a str,
     pub o_status: &'a str,
     pub o_quantity: &'a i64,
     pub o_vend_kex_1: &'a str,

@@ -189,7 +189,7 @@ impl<'r> FromRequest<'r> for BearerToken {
                 let now: i64 = chrono::offset::Utc::now().timestamp();
                 let expire = match claims["expiration"].parse::<i64>() {
                     Ok(n) => n,
-                    Err(_e) => 0,
+                    Err(_) => 0,
                 };
                 if now > expire {
                     return Outcome::Failure((Status::Unauthorized, BearerTokenError::Expired)) 

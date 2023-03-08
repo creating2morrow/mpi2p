@@ -1,6 +1,5 @@
 // Customer repo/service layer
 use crate::auth;
-use crate::auth::verify_access;
 use crate::models::*;
 use crate::monero;
 use crate::schema;
@@ -80,7 +79,7 @@ pub async fn verify_login(address: String, signature: String) -> Authorization {
     match results {
         Ok(r) => {
             if r.c_xmr_address != String::from("") {
-                let m_access = verify_access(&r.c_xmr_address, &signature).await;
+                let m_access = auth::verify_access(&r.c_xmr_address, &signature).await;
                 if !m_access { return Default::default() }
                 return f_auth;
             }

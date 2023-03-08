@@ -49,6 +49,7 @@ diesel::table! {
         o_msig_kex_1 -> Text,
         o_msig_kex_2 -> Text,
         o_msig_kex_3 -> Text,
+        o_subaddress -> Varchar,
         o_status -> Text,
         o_quantity -> Int8,
         o_vend_kex_1 -> Varchar,
