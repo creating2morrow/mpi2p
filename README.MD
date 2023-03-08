@@ -76,14 +76,13 @@ is screened accordingly. The login API is used to get the random data.
 ### Authentication
 
 * `/login/<customer|vendor>/<address>/<signature>`
-* on initial request just send address and signature but it doesn't matter any string
-* get auth response and sign the `data` in it with xmr wallet [sign]() feature
+* on initial request send address and signature but it doesn't matter data signed
+* get auth response and sign the `data` in it with xmr wallet [sign](https://www.getmonero.org/resources/developer-guides/wallet-rpc.html#sign) feature
 * call the login API a second time to create customer or vendor
 
 ### Authorization
 
-* protected APIs currently require address/signature path parameters
-* `token: <JWT(claim:ADDRESS:EXPIRATION)>` on subsequent requests
+* `token: <JWT(claim:ADDRESS,EXPIRATION)>` on subsequent requests
 * address must match the one on file during login
 * if auth expiration then new data must be signed (default : 60 minutes)
 * call the login API again to refresh and sign new data
