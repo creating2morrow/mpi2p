@@ -9,8 +9,8 @@ i2p marketplace api standards bootstrap
 
 ## I2P (invisble internet)
 
-* download from [geti2p.org](https://geti2p.org/en/)
-* setup tunnel at http://127.0.0.1:7657/i2ptunnelmgr
+* automated tunnel controll
+* i2p-zero
 
 ## Rustlang
 
@@ -71,10 +71,7 @@ Maybe one day
 User signs rotating random data per request and the `Authorization` header
 is screened accordingly. The login API is used to get the random data.
 
-`Authorization: <ADDRESS>:<SIGNATURE>`
-
-{in progress}: encrypt the plain-text auth into a JWT.
-* make the expiration of the tokens configurable at run-time
+`token: <JWT>`
 
 ### Authentication
 
@@ -86,7 +83,7 @@ is screened accordingly. The login API is used to get the random data.
 ### Authorization
 
 * protected APIs currently require address/signature path parameters
-* <i>Future use</i>: set `Authorization: Bearer <JWT(claim:ADDRESS:SIGNATURE)>` on subsequent requests
+* `token: <JWT(claim:ADDRESS:EXPIRATIONa)>` on subsequent requests
 * address must match the one on file during login
 * if auth expiration then new data must be signed (default : 60 minutes)
 * call the login API again to refresh and sign new data
@@ -111,12 +108,12 @@ is screened accordingly. The login API is used to get the random data.
 * [x] Customer APIs
 * [x] Vendor APIs
 * [x] Product APIs
-* [x] Order APIs / Monero Multisignature integration - 3/23
-* [x] Automate I2P tunnel creation, etc. - 3/23
-* [ ] From_Request Async Trait Authorization flow - 4/23
-* [ ] Unit tests - 5/23
-* [ ] Functional tests - 5/23
-* [ ] Pentest - 5/23
-* [ ] Documentation - 5/23
-* [ ] GUI - 6/23
-* [ ] Beta release v0.1.0-beta 7/23
+* [x] Order APIs / Monero Multisignature integration
+* [x] Automate I2P tunnel creation, etc.
+* [x] From_Request Async Trait Authorization flow
+* [ ] Unit tests - 4/23
+* [ ] Functional tests - 4/23
+* [ ] Pentest - 4/23
+* [ ] Documentation - 4/23
+* [ ] GUI - 5/23
+* [ ] Beta release v0.1.0-beta 6/23

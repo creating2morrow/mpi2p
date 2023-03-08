@@ -115,7 +115,7 @@ pub struct XmrRpcVerifyResult {
     pub good: bool,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct XmrRpcVersionResult {
     pub version: i32,
 }
@@ -180,13 +180,7 @@ pub struct XmrRpcVerifyResponse {
     pub result: XmrRpcVerifyResult,
 }
 
-#[derive(Serialize, Deserialize)]
-#[serde(crate = "rocket::serde")]
-pub struct XmrApiVersionResponse {
-    pub version: i32,
-}
-
-#[derive(Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug)]
 pub struct XmrRpcVersionResponse {
     pub result: XmrRpcVersionResult,
 }
@@ -402,6 +396,7 @@ pub struct GetAuthResponse {
     pub address: String,
     pub created: i64,
     pub data: String,
+    pub token: String,
 }
 
 impl Default for GetAuthResponse {
@@ -410,6 +405,7 @@ impl Default for GetAuthResponse {
             address: String::from(""),
             created: 0,
             data: String::from(""),
+            token: String::from(""),
         }
     }
 }
@@ -529,8 +525,9 @@ impl GetAuthResponse {
     pub fn build(m_auth: models::Authorization) -> Self {
         GetAuthResponse {
             address: m_auth.xmr_address,
-            data: m_auth.rnd,
             created: m_auth.created,
+            data: m_auth.rnd,
+            token: m_auth.token,
         }
     }
 }

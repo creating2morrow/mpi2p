@@ -63,26 +63,27 @@ pub async fn verify_login(address: String, signature: String) -> Authorization {
     if f_auth.xmr_address == String::from("") {
         return auth::create(connection, address).await;
     }
-    let sig_address: String = monero::verify_signature(address, data, signature).await;
+    let sig_address: String = monero::verify_signature(address, data, String::from(&signature)).await;
     if sig_address == utils::ApplicationErrors::LoginError.value() {
         return f_auth;
     }
-    let results = vendors
+    let result = vendors
         .filter(schema::vendors::v_xmr_address.eq(&sig_address))
-        .load::<Vendor>(connection);
-    match results {
+        .first::<Vendor>(connection);
+    match result {
         Ok(r) => {
-            if &r.len() > &0 {
-                return f_auth;
-            } else {
-                info!("creating new vendor");
-                create(connection, &sig_address, "", "", "", &false).await;
+            if r.v_xmr_address != String::from("") {
+                let m_access = auth::verify_access(&r.v_xmr_address, &signature).await;
+                if !m_access { return Default::default() }
                 return f_auth;
             }
-        }
-        _ => {
             error!("error creating vendor");
             Default::default()
+        }
+        _ => {
+            info!("creating new vendor");
+            create(connection, &sig_address, "", "", "", &false).await;
+            return f_auth;
         }
     }
 }

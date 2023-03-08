@@ -5,6 +5,7 @@ diesel::table! {
         aid -> Varchar,
         created -> Int8,
         rnd -> Varchar,
+        token -> Varchar,
         xmr_address -> Varchar,
     }
 }

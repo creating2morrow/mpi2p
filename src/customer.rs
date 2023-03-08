@@ -1,5 +1,6 @@
 // Customer repo/service layer
 use crate::auth;
+use crate::auth::verify_access;
 use crate::models::*;
 use crate::monero;
 use crate::schema;
@@ -69,26 +70,27 @@ pub async fn verify_login(address: String, signature: String) -> Authorization {
     if f_auth.xmr_address == String::from("") {
         return auth::create(connection, address).await;
     }
-    let sig_address: String = monero::verify_signature(address, data, signature).await;
+    let sig_address: String = monero::verify_signature(address, data, String::from(&signature)).await;
     if sig_address == utils::ApplicationErrors::LoginError.value() {
         return f_auth;
     }
     let results = customers
         .filter(schema::customers::c_xmr_address.eq(&sig_address))
-        .load::<Customer>(connection);
+        .first::<Customer>(connection);
     match results {
         Ok(r) => {
-            if &r.len() > &0 {
-                return f_auth;
-            } else {
-                info!("creating new customer");
-                create(connection, &sig_address, "", "").await;
+            if r.c_xmr_address != String::from("") {
+                let m_access = verify_access(&r.c_xmr_address, &signature).await;
+                if !m_access { return Default::default() }
                 return f_auth;
             }
-        }
-        _ => {
             error!("error creating customer");
             Default::default()
+        }
+        _ => {
+            info!("creating new customer");
+            create(connection, &sig_address, "", "").await;
+            return f_auth;
         }
     }
 }

@@ -143,6 +143,7 @@ pub struct Authorization {
     pub aid: String,
     pub created: i64,
     pub rnd: String,
+    pub token: String,
     pub xmr_address: String,
 }
 
@@ -152,6 +153,7 @@ impl Default for Authorization {
             aid: String::from(""),
             created: 0,
             rnd: String::from(""),
+            token: String::from(""),
             xmr_address: String::from(""),
         }
     }
@@ -216,6 +218,7 @@ pub struct NewAuthorization<'a> {
     pub aid: &'a str,
     pub created: &'a i64,
     pub rnd: &'a str,
+    pub token: &'a str,
     pub xmr_address: &'a str,
 }
 

@@ -10,6 +10,16 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use log::{debug, error, info};
 
+use rocket::request::FromRequest;
+use rocket::{Request, request};
+use rocket::outcome::Outcome;
+use rocket::http::Status;
+
+use hmac::{Hmac, Mac};
+use jwt::{AlgorithmType, Header, SignWithKey, Token, VerifyWithKey};
+use sha2::Sha384;
+use std::collections::BTreeMap;
+
 /// Determine customer or vendor login
 pub async fn get_login(address: String, corv: String, signature: String) -> Authorization {
     if corv == utils::LoginType::Customer.value() {
@@ -25,10 +35,12 @@ pub async fn create(conn: &mut PgConnection, address: String) -> Authorization {
     let aid: String = utils::generate_rnd();
     let rnd: String = utils::generate_rnd();
     let created: i64 = chrono::offset::Utc::now().timestamp();
+    let token: String = create_token(String::from(&address), created);
     let new_auth = NewAuthorization {
         aid: &aid,
         created: &created,
         rnd: &rnd,
+        token: &token,
         xmr_address: &address,
     };
     debug!("insert auth: {:?}", new_auth);
@@ -55,11 +67,19 @@ pub async fn find(address: String) -> Authorization {
 }
 
 /// Update new authorization creation time
-async fn update_expiration(_id: &str) -> Authorization {
+async fn update_expiration(_id: &str, address: String) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
     info!("modify auth expiration");
     let time: i64 = chrono::offset::Utc::now().timestamp();
+    // update token as well
+    let token_update = diesel::update(authorizations.find(_id))
+        .set(token.eq(create_token(address, time)))
+        .get_result::<Authorization>(connection);
+    match token_update {
+        Ok(_) => info!("token updated successfully"),
+        Err(_) => error!("error updating token"),
+    }
     let m = diesel::update(authorizations.find(_id))
         .set(created.eq(time))
         .get_result::<Authorization>(connection);
@@ -84,10 +104,7 @@ async fn update_data(_id: &str) -> Authorization {
     }
 }
 
-/// TODO: this is a temporary workaround
-/// from_request doesn't support async_trait
-/// and we need that to verify the authorization header
-/// migrate to async from_request impl
+/// Called during auth flow to update data to sign and expiration
 pub async fn verify_access(address: &str, signature: &str) -> bool {
     // look up auth for address
     let f_auth: Authorization = find(String::from(address)).await;
@@ -96,7 +113,7 @@ pub async fn verify_access(address: &str, signature: &str) -> bool {
         let now: i64 = chrono::offset::Utc::now().timestamp();
         let expiration = get_auth_expiration();
         if now > f_auth.created + expiration {
-            update_expiration(&f_auth.aid).await;
+            update_expiration(&f_auth.aid, f_auth.xmr_address).await;
             update_data(&f_auth.aid).await;
             return false;
         }
@@ -106,6 +123,7 @@ pub async fn verify_access(address: &str, signature: &str) -> bool {
     let sig_address: String =
         monero::verify_signature(String::from(address), data, String::from(signature)).await;
     if sig_address == utils::ApplicationErrors::LoginError.value() {
+        debug!("signing failed");
         return false;
     }
     info!("auth verified");
@@ -116,4 +134,58 @@ pub async fn verify_access(address: &str, signature: &str) -> bool {
 fn get_auth_expiration() -> i64 {
     let args = args::Args::parse();
     args.token_timeout * 60
+}
+
+fn create_token(address: String, created: i64) -> String {
+    let key: Hmac<Sha384> = Hmac::new_from_slice(b"some-secret")
+        .expect("hash");
+    let header = Header {
+        algorithm: AlgorithmType::Hs384,
+        ..Default::default()
+    };
+    let mut claims = BTreeMap::new();
+    let expiration = get_auth_expiration() * created;
+    claims.insert("address", address);
+    claims.insert("expiration", expiration.to_string());
+    let token = Token::new(header, claims).sign_with_key(&key);
+    String::from(token.expect("expected token").as_str())
+}
+
+#[derive(Debug)]
+pub struct BearerToken(String);
+
+#[derive(Debug)]
+pub enum BearerTokenError {
+    Missing,
+    Invalid,
+}
+
+#[rocket::async_trait]
+impl<'r> FromRequest<'r> for BearerToken {
+    type Error = BearerTokenError;
+
+    async fn from_request(request: &'r Request<'_>) -> request::Outcome<Self, Self::Error> {
+        let token = request.headers().get_one("token");
+        let path = request.uri().path().to_string();
+        let split1 = path.split("/");
+        let mut v1: Vec<String> = split1.map(|s| String::from(s)).collect();
+        let address = v1.remove(2);
+        debug!("{}", address);
+        match token {
+            Some(token) => {
+                // check validity
+                let key: Hmac<Sha384> = Hmac::new_from_slice(b"some-secret").expect("");
+                let jwt: Token<Header, BTreeMap<String, String>, _> = token.verify_with_key(&key)
+                    .expect("expected verify with key");
+                let claims = jwt.claims();
+                // verify address
+                if claims["address"] != address {
+                    return Outcome::Failure((Status::Unauthorized, BearerTokenError::Invalid))
+                }
+                // verify expiration
+                Outcome::Success(BearerToken(String::from(token)))
+            }
+            None => Outcome::Failure((Status::Unauthorized, BearerTokenError::Missing)),
+        }
+    }
 }

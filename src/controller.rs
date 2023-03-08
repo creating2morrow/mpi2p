@@ -1,3 +1,4 @@
+use log::debug;
 use rocket::{get, patch};
 use rocket::http::Status;
 use rocket::response::status::Custom;
@@ -17,31 +18,20 @@ use crate::vendor;
 /// Get payment API version
 /// Protected: false
 #[get("/version")]
-pub async fn get_version() -> Custom<Json<reqres::XmrApiVersionResponse>> {
-    let res: reqres::XmrRpcVersionResponse = monero::get_version().await;
-    let version: i32 = res.result.version;
-    Custom(
-        Status::Ok,
-        Json(reqres::XmrApiVersionResponse { version }),
-    )
+pub async fn get_version() -> Custom<Json<reqres::XmrRpcVersionResponse>> {
+    Custom(Status::Ok, Json(monero::get_version().await))
 }
 
 /// Return a single customer's information
 /// Protected: true
-#[get("/<address>/<signature>")]
-pub async fn get_customer(
-    address: String,
-    signature: String,
-) -> Custom<Json<reqres::GetCustomerResponse>> {
-    let is_verified: bool = auth::verify_access(&address, &signature).await;
-    if !is_verified {
-        return Custom(Status::Unauthorized, Json(Default::default()));
-    }
+#[get("/<address>")]
+pub async fn get_customer
+(address: String,
+token: auth::BearerToken)
+-> Custom<Json<reqres::GetCustomerResponse>> {
+    debug!("token: {:?}", token);
     let m_customer: models::Customer = customer::find(address).await;
-    Custom(
-        Status::Ok,
-        Json(reqres::GetCustomerResponse::build(m_customer)),
-    )
+    Custom(Status::Ok,Json(reqres::GetCustomerResponse::build(m_customer)))
 }
 
 /// Get a single vendor's information
