@@ -10,10 +10,10 @@ use diesel::pg::PgConnection;
 use diesel::prelude::*;
 use log::{debug, error, info};
 
-use rocket::request::FromRequest;
-use rocket::{Request, request};
-use rocket::outcome::Outcome;
 use rocket::http::Status;
+use rocket::outcome::Outcome;
+use rocket::request::FromRequest;
+use rocket::{request, Request};
 
 use hmac::{Hmac, Mac};
 use jwt::{AlgorithmType, Header, SignWithKey, Token, VerifyWithKey};
@@ -93,7 +93,7 @@ async fn update_expiration(_id: &str, address: String) -> Authorization {
 async fn update_data(_id: &str) -> Authorization {
     use self::schema::authorizations::dsl::*;
     let connection = &mut utils::establish_pgdb_connection().await;
-    info!( "modify auth data");
+    info!("modify auth data");
     let data: String = utils::generate_rnd();
     let m = diesel::update(authorizations.find(_id))
         .set(rnd.eq(data))
@@ -138,8 +138,7 @@ fn get_auth_expiration() -> i64 {
 
 fn create_token(address: String, created: i64) -> String {
     let jwt_secret_key = utils::get_jwt_secret_key();
-    let key: Hmac<Sha384> = Hmac::new_from_slice(&jwt_secret_key)
-        .expect("hash");
+    let key: Hmac<Sha384> = Hmac::new_from_slice(&jwt_secret_key).expect("hash");
     let header = Header {
         algorithm: AlgorithmType::Hs384,
         ..Default::default()
@@ -178,23 +177,37 @@ impl<'r> FromRequest<'r> for BearerToken {
                 // check validity
                 let jwt_secret_key = utils::get_jwt_secret_key();
                 let key: Hmac<Sha384> = Hmac::new_from_slice(&jwt_secret_key).expect("");
-                let jwt: Token<Header, BTreeMap<String, String>, _> = token.verify_with_key(&key)
-                    .expect("expected verify with key");
-                let claims = jwt.claims();
-                // verify address
-                if claims["address"] != address {
-                    return Outcome::Failure((Status::Unauthorized, BearerTokenError::Invalid))
+                let jwt: Result<
+                    Token<jwt::Header, BTreeMap<std::string::String, std::string::String>, _>,
+                    jwt::Error,
+                > = token.verify_with_key(&key);
+               return match jwt {
+                    Ok(j) => {
+                        let claims = j.claims();
+                        debug!("claim address: {}", claims["address"]);
+                        // verify address
+                        if claims["address"] != address {
+                            return Outcome::Failure((
+                                Status::Unauthorized,
+                                BearerTokenError::Invalid,
+                            ));
+                        }
+                        // verify expiration
+                        let now: i64 = chrono::offset::Utc::now().timestamp();
+                        let expire = match claims["expiration"].parse::<i64>() {
+                            Ok(n) => n,
+                            Err(_) => 0,
+                        };
+                        if now > expire {
+                            return Outcome::Failure((
+                                Status::Unauthorized,
+                                BearerTokenError::Expired,
+                            ));
+                        }
+                        Outcome::Success(BearerToken(String::from(token)))
+                    }
+                    Err(_) => Outcome::Failure((Status::Unauthorized, BearerTokenError::Invalid)),
                 }
-                // verify expiration
-                let now: i64 = chrono::offset::Utc::now().timestamp();
-                let expire = match claims["expiration"].parse::<i64>() {
-                    Ok(n) => n,
-                    Err(_) => 0,
-                };
-                if now > expire {
-                    return Outcome::Failure((Status::Unauthorized, BearerTokenError::Expired)) 
-                }
-                Outcome::Success(BearerToken(String::from(token)))
             }
             None => Outcome::Failure((Status::Unauthorized, BearerTokenError::Missing)),
         }
