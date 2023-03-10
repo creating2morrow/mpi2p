@@ -5,7 +5,7 @@ use diesel::prelude::*;
 use clap::Parser;
 use crate::args;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum ReleaseEnvironment {
     Development,
     Production,
@@ -80,4 +80,23 @@ pub fn get_jwt_secret_key() -> Vec<u8> {
     let args = args::Args::parse();
     let key = String::from(args.jwt_secret_key);
     key.into_bytes()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn generate_rnd_test() {
+        let rnd = generate_rnd();
+        let valid_length = 64;
+        assert_eq!(rnd.len(), valid_length);
+    }
+
+    #[test]
+    fn args_test() {
+        let env = get_release_env();
+        assert_eq!(env, ReleaseEnvironment::Development)
+    }
+
 }

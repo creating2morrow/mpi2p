@@ -23,13 +23,15 @@ pub struct Args {
     /// Monero RPC Username
     #[arg(
         long,
-        help = "Monero RPC username."
+        help = "Monero RPC username.",
+        default_value = "user",
     )]
     pub monero_rpc_username: String,
     /// Monero RPC credential
     #[arg(
         long,
         help = "Monero RPC credential.",
+        default_value = "pass",
     )]
     pub monero_rpc_cred: String,
     /// Postgres db url string
@@ -53,6 +55,7 @@ pub struct Args {
         short,
         long,
         help = "Set a secret for signing JWTs",
+        default_value = "some-secret",
     )]
     pub jwt_secret_key: String,
 }

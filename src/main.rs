@@ -5,9 +5,6 @@ use std::time::Duration;
 use mpi2p::*;
 use log::info;
 
-#[cfg(test)]
-mod tests;
-
 // The only changes in here should be mounting new controller methods
 
 #[launch]
