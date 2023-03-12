@@ -25,11 +25,8 @@ impl  Interface {
             let pair = vec![(k,v)];
             for &(key, value) in pair.iter() { db.set(&key, &value).unwrap(); }
         }
-        // Note: `commit` is choosen to be explicit as
-        // in case of failure it is responsibility of
-        // the client to handle the error
         match txn.commit() {
-            Err(_) => panic!("failed to commit!"),
+            Err(_) => error!("failed to commit!"),
             Ok(_) => ()
         }
     }
@@ -46,8 +43,15 @@ impl  Interface {
         r
     }
     pub fn delete(e: &Environment, h: &DbHandle, k: &str) {
-        let reader = e.get_reader().unwrap();
-        let db = reader.bind(&h);
-        db.del::<>(&k).unwrap_or_else(|_| error!("failed to delete"));
+        let txn = e.new_transaction().unwrap();
+        {
+            // get a database bound to this transaction
+            let db = txn.bind(&h); 
+            db.del::<>(&k).unwrap_or_else(|_| error!("failed to delete"));
+        }
+        match txn.commit() {
+            Err(_) => error!("failed to commit!"),
+            Ok(_) => ()
+        }
     }
 }
