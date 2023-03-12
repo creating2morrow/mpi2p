@@ -34,14 +34,6 @@ pub struct Args {
         default_value = "pass",
     )]
     pub monero_rpc_cred: String,
-    /// Postgres db url string
-    #[arg(
-        short,
-        long,
-        help = "Postgres db url",
-        default_value = "postgres://postgres:postgres@127.0.0.1:5432/postgres"
-    )]
-    pub postgres_db_url: String,
     /// Token expiration in minutes
     #[arg(
         short,

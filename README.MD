@@ -22,18 +22,10 @@ i2p marketplace api standards bootstrap
 * Web-framework information available at [rocket.rs](https://rocket.rs/)
 * see `Cargo.toml`
 
-## PostgreSQL
+## lmdb
 
-* install from [Podman](https://registry.hub.docker.com/_/postgres/) official image
-* `podman pull postgres`
-* `podman run --rm -P -p 127.0.0.1:5432:5432 -e POSTGRES_DB=postgres -e POSTGRES_PASSWORD=postgres --name pg postgres:latest`
-* set db with the r flag, e.g. `cargo run -- -p <PGDB_URL>`
-*  default is - `postgres://postgres:postgres@127.0.0.1:5432/postgres`
-
-## Diesel ORM
-
-* install diesel cli from [diesel.rs](https://diesel.rs/guides/configuring-diesel-cli.html)
-* `diesel migration run --database-url <db_url_string>`
+* need to update lmdb-rs
+* wip
 
 ## Monero
 
@@ -46,9 +38,7 @@ i2p marketplace api standards bootstrap
 * setup dependencies as required
 * `lib.rs` - add new modules here
 * related code should have a module (customer, vendor, etc.)
-* `models.rs` - if updating db generate new `schema.rs`
-    * `diesel migration run`
-    * `rm src/schema.rs && diesel print-schema --database-url <db_url_string> > src/schema.rs` 
+* `models.rs` - db structs
 * `main.rs` - controllers / app startup are here
 * `RUST_LOG=debug cargo run -- --monero-rpc-username user --monero-rpc-cred pass`
 * hack away
@@ -109,6 +99,7 @@ is screened accordingly. The login API is used to get the random data.
 * [x] Order APIs / Monero Multisignature integration
 * [x] Automate I2P tunnel creation, etc.
 * [x] From_Request Async Trait Authorization flow
+* [x] LMDB rewrite - 3/23
 * [ ] Tests / Docs - 4/23
 * [ ] GUI - 5/23
 * [ ] Beta release v0.1.0-beta 6/23

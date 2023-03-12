@@ -1,9 +1,9 @@
 use hex;
 use rand_core::RngCore;
-use diesel::pg::PgConnection;
-use diesel::prelude::*;
 use clap::Parser;
-use crate::args;
+use crate::{args, i2p, monero};
+use log::info;
+use std::time::Duration;
 
 #[derive(Debug, PartialEq)]
 pub enum ReleaseEnvironment {
@@ -49,14 +49,6 @@ impl ApplicationErrors {
     }
 }
 
-/// Helper for connecting to db on ORM
-pub async fn establish_pgdb_connection() -> PgConnection {
-    let args = args::Args::parse();
-    let db_string: String = String::from(args.postgres_db_url);
-    PgConnection::establish(&db_string)
-        .unwrap_or_else(|_| panic!("error connecting to {}", db_string))
-}
-
 /// Random data generation for authorization signing
 pub fn generate_rnd() -> String {
     let mut data = [0u8; 32];
@@ -82,6 +74,20 @@ pub fn get_jwt_secret_key() -> Vec<u8> {
     key.into_bytes()
 }
 
+pub fn empty_string() -> String { String::from("") }
+
+pub async fn start_up() {
+    info!("mpi2p is starting up");
+    monero::check_rpc_connection().await;
+    let env: String = get_release_env().value();
+    let dev: String = ReleaseEnvironment::Development.value();
+    if env != dev {
+        i2p::start().await;
+        tokio::time::sleep(Duration::new(59, 0)).await;
+        i2p::create_tunnel().await;
+    }
+    info!("{} - mpi2p is online", env);
+}
 #[cfg(test)]
 mod tests {
     use super::*;

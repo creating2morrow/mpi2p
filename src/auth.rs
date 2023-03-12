@@ -1,14 +1,12 @@
 use crate::args;
 use crate::customer;
+use crate::db;
 use crate::models::*;
-use crate::monero;
-use crate::schema;
+// use crate::monero;
 use crate::utils;
-use crate::vendor;
+// use crate::vendor;
 use clap::Parser;
-use diesel::pg::PgConnection;
-use diesel::prelude::*;
-use log::{debug, error, info};
+use log::{debug, info};
 
 use rocket::http::Status;
 use rocket::outcome::Outcome;
@@ -21,114 +19,113 @@ use sha2::Sha384;
 use std::collections::BTreeMap;
 
 /// Determine customer or vendor login
-pub async fn get_login(address: String, corv: String, signature: String) -> Authorization {
-    if corv == utils::LoginType::Customer.value() {
-        customer::verify_login(address, signature).await
-    } else {
-        vendor::verify_login(address, signature).await
-    }
+pub async fn get_login
+(address: String, aid: String, corv: String, cvid: String, signature: String) -> Authorization {
+    info!("verify {} login", corv);
+    // if corv == utils::LoginType::Customer.value() {
+        customer::verify_login(address, aid, cvid, signature).await
+    // } // else {
+        //vendor::verify_login(address, signature).await
+    // }
 }
 
 /// Create authorization data to sign and expiration
-pub async fn create(conn: &mut PgConnection, address: String) -> Authorization {
-    use crate::schema::authorizations;
-    let aid: String = utils::generate_rnd();
+pub fn create(address: &String) -> Authorization {
+    info!("creating auth");
+    let aid: String = format!("auth{}", utils::generate_rnd());
     let rnd: String = utils::generate_rnd();
     let created: i64 = chrono::offset::Utc::now().timestamp();
-    let token: String = create_token(String::from(&address), created);
-    let new_auth = NewAuthorization {
-        aid: &aid,
-        created: &created,
-        rnd: &rnd,
-        token: &token,
-        xmr_address: &address,
+    let token: String = create_token(String::from(address), created);
+    let new_auth = Authorization {
+        aid,
+        created,
+        cvid: utils::empty_string(),
+        rnd,
+        token,
+        xmr_address: String::from(address),
     };
-    debug!("insert auth: {:?}", new_auth);
-    diesel::insert_into(authorizations::table)
-        .values(&new_auth)
-        .get_result(conn)
-        .expect("error saving new auth")
+    let s = db::Interface::open();
+    debug!("insert auth: {:?}", &new_auth);
+    let k = &new_auth.aid;
+    db::Interface::write(&s.env, &s.handle, k, &Authorization::to_db(&new_auth));
+    new_auth
 }
 
 /// Authorization lookup for recurring requests
-pub async fn find(address: String) -> Authorization {
-    use self::schema::authorizations::dsl::*;
-    let connection = &mut utils::establish_pgdb_connection().await;
-    let results = authorizations
-        .filter(schema::authorizations::xmr_address.eq(address))
-        .first::<Authorization>(connection);
-    match results {
-        Ok(r) => r,
-        _ => {
-            error!("error finding auth");
-            Default::default()
-        }
+pub fn find(aid: &String) -> Authorization {
+    info!("searching for auth: {}", aid);
+    let s = db::Interface::open();
+    let r = db::Interface::read(&s.env, &s.handle, &String::from(aid));
+    debug!("auth read: {}", r);
+    if r == utils::empty_string() {
+        return Default::default()
     }
+    Authorization::from_db(String::from(aid), r)
 }
 
-/// Update new authorization creation time
-async fn update_expiration(_id: &str, address: String) -> Authorization {
-    use self::schema::authorizations::dsl::*;
-    let connection = &mut utils::establish_pgdb_connection().await;
-    info!("modify auth expiration");
-    let time: i64 = chrono::offset::Utc::now().timestamp();
-    // update token as well
-    let token_update = diesel::update(authorizations.find(_id))
-        .set(token.eq(create_token(address, time)))
-        .get_result::<Authorization>(connection);
-    match token_update {
-        Ok(_) => info!("token updated successfully"),
-        Err(_) => error!("error updating token"),
-    }
-    let m = diesel::update(authorizations.find(_id))
-        .set(created.eq(time))
-        .get_result::<Authorization>(connection);
-    match m {
-        Ok(m) => m,
-        Err(_e) => Default::default(),
-    }
-}
+// /// Update new authorization creation time
+// async fn update_expiration(_id: &str, address: String) -> Authorization {
+//     use self::schema::authorizations::dsl::*;
+//     let connection = &mut utils::establish_pgdb_connection().await;
+//     info!("modify auth expiration");
+//     let time: i64 = chrono::offset::Utc::now().timestamp();
+//     // update token as well
+//     let token_update = diesel::update(authorizations.find(_id))
+//         .set(token.eq(create_token(address, time)))
+//         .get_result::<Authorization>(connection);
+//     match token_update {
+//         Ok(_) => info!("token updated successfully"),
+//         Err(_) => error!("error updating token"),
+//     }
+//     let m = diesel::update(authorizations.find(_id))
+//         .set(created.eq(time))
+//         .get_result::<Authorization>(connection);
+//     match m {
+//         Ok(m) => m,
+//         Err(_e) => Default::default(),
+//     }
+// }
 
-/// Update auth data to sign
-async fn update_data(_id: &str) -> Authorization {
-    use self::schema::authorizations::dsl::*;
-    let connection = &mut utils::establish_pgdb_connection().await;
-    info!("modify auth data");
-    let data: String = utils::generate_rnd();
-    let m = diesel::update(authorizations.find(_id))
-        .set(rnd.eq(data))
-        .get_result::<Authorization>(connection);
-    match m {
-        Ok(m) => m,
-        Err(_e) => Default::default(),
-    }
-}
+// /// Update auth data to sign
+// async fn update_data(_id: &str) -> Authorization {
+//     use self::schema::authorizations::dsl::*;
+//     let connection = &mut utils::establish_pgdb_connection().await;
+//     info!("modify auth data");
+//     let data: String = utils::generate_rnd();
+//     let m = diesel::update(authorizations.find(_id))
+//         .set(rnd.eq(data))
+//         .get_result::<Authorization>(connection);
+//     match m {
+//         Ok(m) => m,
+//         Err(_e) => Default::default(),
+//     }
+// }
 
-/// Called during auth flow to update data to sign and expiration
-pub async fn verify_access(address: &str, signature: &str) -> bool {
-    // look up auth for address
-    let f_auth: Authorization = find(String::from(address)).await;
-    if f_auth.xmr_address != String::from("") {
-        // check expiration, generate new data to sign if necessary
-        let now: i64 = chrono::offset::Utc::now().timestamp();
-        let expiration = get_auth_expiration();
-        if now > f_auth.created + expiration {
-            update_expiration(&f_auth.aid, f_auth.xmr_address).await;
-            update_data(&f_auth.aid).await;
-            return false;
-        }
-    }
-    // verify signature on the data if not expired
-    let data = f_auth.rnd;
-    let sig_address: String =
-        monero::verify_signature(String::from(address), data, String::from(signature)).await;
-    if sig_address == utils::ApplicationErrors::LoginError.value() {
-        debug!("signing failed");
-        return false;
-    }
-    info!("auth verified");
-    return true;
-}
+// /// Called during auth flow to update data to sign and expiration
+// pub async fn verify_access(address: &str, signature: &str) -> bool {
+//     // look up auth for address
+//     let f_auth: Authorization = find(String::from(address)).await;
+//     if f_auth.xmr_address != String::from("") {
+//         // check expiration, generate new data to sign if necessary
+//         let now: i64 = chrono::offset::Utc::now().timestamp();
+//         let expiration = get_auth_expiration();
+//         if now > f_auth.created + expiration {
+//             update_expiration(&f_auth.aid, String::from(f_auth.xmr_address)).await;
+//             update_data(&f_auth.aid).await;
+//             return false;
+//         }
+//     }
+//     // verify signature on the data if not expired
+//     let data = f_auth.rnd;
+//     let sig_address: String =
+//         monero::verify_signature(String::from(address), data, String::from(signature)).await;
+//     if sig_address == utils::ApplicationErrors::LoginError.value() {
+//         debug!("signing failed");
+//         return false;
+//     }
+//     info!("auth verified");
+//     return true;
+// }
 
 /// get the auth expiration command line configuration
 fn get_auth_expiration() -> i64 {

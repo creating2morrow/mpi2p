@@ -1,4 +1,4 @@
-use crate::models;
+use crate::{models, utils};
 use serde::{Deserialize, Serialize};
 // All http requests and responses are here
 
@@ -240,8 +240,8 @@ impl Default for XmrRpcMakeResponse {
         XmrRpcMakeResponse {
             result:
             XmrRpcMakeResult {
-                address: String::from(""),
-                multisig_info: String::from(""),
+                address: utils::empty_string(),
+                multisig_info: utils::empty_string(),
             }
         }
     }
@@ -257,7 +257,7 @@ impl Default for XmrRpcFinalizeResponse {
         XmrRpcFinalizeResponse {
             result:
             XmrRpcFinalizeResult {
-                address: String::from(""),
+                address: utils::empty_string(),
             }
         }
     }
@@ -273,7 +273,7 @@ impl Default for XmrRpcExportResponse {
         XmrRpcExportResponse {
             result:
             XmrRpcExportResult {
-                info: String::from(""),
+                info: utils::empty_string(),
             }
         }
     }
@@ -323,9 +323,9 @@ pub struct GetCustomerResponse {
 impl Default for GetCustomerResponse {
     fn default() -> Self {
         GetCustomerResponse {
-            address: String::from(""),
-            name: String::from(""),
-            pgp: String::from(""),
+            address: utils::empty_string(),
+            name: utils::empty_string(),
+            pgp: utils::empty_string(),
         }
     }
 }
@@ -344,10 +344,10 @@ impl Default for GetVendorResponse {
     fn default() -> Self {
         GetVendorResponse {
             active: false,
-            address: String::from(""),
-            description: String::from(""),
-            name: String::from(""),
-            pgp: String::from(""),
+            address: utils::empty_string(),
+            description: utils::empty_string(),
+            name: utils::empty_string(),
+            pgp: utils::empty_string(),
         }
     }
 }
@@ -366,10 +366,10 @@ pub struct GetProductResponse {
 impl Default for GetProductResponse {
     fn default() -> Self {
         GetProductResponse {
-            pid: String::from(""),
+            pid: utils::empty_string(),
             in_stock: false,
-            description: String::from(""),
-            name: String::from(""),
+            description: utils::empty_string(),
+            name: utils::empty_string(),
             price: 0,
             qty: 0,
         }
@@ -394,7 +394,9 @@ impl Default for GetVendorProductsResponse {
 #[serde(crate = "rocket::serde")]
 pub struct GetAuthResponse {
     pub address: String,
+    pub aid: String,
     pub created: i64,
+    pub cvid: String,
     pub data: String,
     pub token: String,
 }
@@ -402,10 +404,12 @@ pub struct GetAuthResponse {
 impl Default for GetAuthResponse {
     fn default() -> Self {
         GetAuthResponse {
-            address: String::from(""),
+            address: utils::empty_string(),
+            aid: utils::empty_string(),
             created: 0,
-            data: String::from(""),
-            token: String::from(""),
+            cvid: utils::empty_string(),
+            data: utils::empty_string(),
+            token: utils::empty_string(),
         }
     }
 }
@@ -421,9 +425,9 @@ pub struct GetDisputeResponse {
 impl Default for GetDisputeResponse {
     fn default() -> Self {
         GetDisputeResponse {
-            orid: String::from(""),
+            orid: utils::empty_string(),
             created: 0,
-            tx_set: String::from(""),
+            tx_set: utils::empty_string(),
         }
     }
 }
@@ -459,29 +463,29 @@ pub struct GetOrderResponse {
 impl Default for GetOrderResponse {
     fn default() -> Self {
         GetOrderResponse {
-            orid: String::from(""),
-            pid: String::from(""),
-            xmr_address: String::from(""),
-            cust_msig_info: String::from(""),
-            cust_kex_1: String::from(""),
-            cust_kex_2: String::from(""),
-            cust_kex_3: String::from(""),
+            orid: utils::empty_string(),
+            pid: utils::empty_string(),
+            xmr_address: utils::empty_string(),
+            cust_msig_info: utils::empty_string(),
+            cust_kex_1: utils::empty_string(),
+            cust_kex_2: utils::empty_string(),
+            cust_kex_3: utils::empty_string(),
             date: 0,
             deliver_date: 0,
             ship_date: 0,
-            hash: String::from(""),
-            msig_prepare: String::from(""),
-            msig_make: String::from(""),
-            msig_kex_1: String::from(""),
-            msig_kex_2: String::from(""),
-            msig_kex_3: String::from(""),
-            subaddress: String::from(""),
-            status: String::from(""),
+            hash: utils::empty_string(),
+            msig_prepare: utils::empty_string(),
+            msig_make: utils::empty_string(),
+            msig_kex_1: utils::empty_string(),
+            msig_kex_2: utils::empty_string(),
+            msig_kex_3: utils::empty_string(),
+            subaddress: utils::empty_string(),
+            status: utils::empty_string(),
             quantity: 0,
-            vend_kex_1: String::from(""),
-            vend_kex_2: String::from(""),
-            vend_kex_3: String::from(""),
-            vend_msig_info: String::from(""),
+            vend_kex_1: utils::empty_string(),
+            vend_kex_2: utils::empty_string(),
+            vend_kex_3: utils::empty_string(),
+            vend_msig_info: utils::empty_string(),
         }
     }
 }
@@ -504,9 +508,9 @@ impl Default for GetOrdersResponse {
 impl GetCustomerResponse {
     pub fn build(m_customer: models::Customer) -> Self {
         GetCustomerResponse {
-            address: m_customer.c_xmr_address,
-            name: m_customer.c_name,
-            pgp: m_customer.c_pgp,
+            address: m_customer.xmr_address,
+            name: m_customer.name,
+            pgp: m_customer.pgp,
         }
     }
 }
@@ -527,7 +531,9 @@ impl GetAuthResponse {
     pub fn build(m_auth: models::Authorization) -> Self {
         GetAuthResponse {
             address: m_auth.xmr_address,
+            aid: m_auth.aid,
             created: m_auth.created,
+            cvid: m_auth.cvid,
             data: m_auth.rnd,
             token: m_auth.token,
         }

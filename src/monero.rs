@@ -48,6 +48,8 @@ impl RpcFields {
     }
 }
 
+// TODO: spin up monero-wallet-rpc from the app
+
 /// Get monero rpc host from command line argument
 fn get_rpc_host() -> String {
     let args = args::Args::parse();

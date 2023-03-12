@@ -1,4 +1,5 @@
 /target
 /core
+/test-lmdb
 notes.txt
 .env

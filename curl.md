@@ -13,14 +13,17 @@ curl http://127.0.0.1:38083/json_rpc --digest -u user:pass -d '{"jsonrpc":"2.0",
 # [GET] login
 # customer or vendor
 # xmr address
+# aid - auth id
+# cvid - customer or vendor id (2nd api call finalizes login and creates it)
 # data - random bytes to sign
 # signature - generate signature with wallet private keys
-curl http://127.0.0.1:8000/login/<customer|vendor>/<XMR_ADDRESS>/<SIGNATURE>
+curl http://127.0.0.1:8000/login/<customer|vendor>/<XMR_ADDRESS>/<SIGNATURE>/<AID>/CID
 
 # [GET] information
 # customer or vendor
 # xmr address
-curl http://127.0.0.1:8000/<customer|vendor>/<XMR_ADDRESS> -H 'token: <JWT>'
+# customer or vendor id
+curl http://127.0.0.1:8000/<customer|vendor>/<XMR_ADDRESS>/<ID> -H 'token: <JWT>'
 
 # [PATCH] update
 # customer or vendor URI
