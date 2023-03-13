@@ -14,12 +14,25 @@ pub struct Args {
     pub release_env: String,
     /// Monero RPC HOST
     #[arg(
-        short,
         long,
         help = "Monero RPC host.",
         default_value = "http://localhost:38083"
     )]
     pub monero_rpc_host: String,
+    /// Monero RPC password (--password arg)
+    #[arg(
+        long,
+        help = "Monero RPC password.",
+        default_value = "password",
+    )]
+    pub monero_rpc_password: String,
+    /// Monero RPC daemon
+    #[arg(
+        long,
+        help = "Monero RPC daemon.",
+        default_value = "https://stagenet.xmr-tw.org:38081"
+    )]
+    pub monero_rpc_daemon: String,
     /// Monero RPC Username
     #[arg(
         long,

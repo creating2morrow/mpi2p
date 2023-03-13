@@ -49,15 +49,40 @@ impl RpcFields {
 
 pub async fn start_rpc() {
     info!("starting monero-wallet-rpc");
+    let port = get_rpc_port();
+    let login = get_rpc_creds();
+    let creds = format!("{}:{}", login.username, login.credential);
+    let pass = get_rpc_password();
+    let daemon = get_rpc_daemon();
     // TODO: cmd line args 
-    let output = Command::new("./monero-wallet-rpc")
-        // --rpc-bind-port 38083 --stagenet --wallet-dir wallet --rpc-login user:pass --prompt-for-password  --daemon-address  http://stagenet.xmr-tw.org:38081
-        .args(["--rpc-bind-port", "38083", "--stagenet",
-            "--wallet-dir", "wallet", "--rpc-login", "user:pass",
-            "--password", "pass", "--daemon-address", "https://stagenet.xmr-tw.org:38081"])
+    let args = ["--rpc-bind-port", &port,
+        "--wallet-dir", "wallet", "--rpc-login", &creds,
+        "--password", &pass, "--daemon-address", &daemon];
+    let env = utils::get_release_env();
+    if env == utils::ReleaseEnvironment::Development {
+        let output = Command::new("./monero-wallet-rpc")
+        .args(args)
+        .arg("--stagenet")
         .spawn()
         .expect("monero-wallet-rpc failed to start");
-    debug!("{:?}", output.stdout);
+        debug!("{:?}", output.stdout);
+    }  else {
+        let output = Command::new("./monero-wallet-rpc")
+        .args(args)
+        .spawn()
+        .expect("monero-wallet-rpc failed to start");
+        debug!("{:?}", output.stdout);
+    }
+}
+
+fn get_rpc_port() -> String {
+    let args = args::Args::parse();
+    let rpc = String::from(args.monero_rpc_host);
+    let values = rpc.split(":");
+    let mut v: Vec<String> = values.map(|s| String::from(s)).collect();
+    let  port = v.remove(2);
+    debug!("monero-wallet-rpc port: {}", port);
+    port
 }
 
 /// Get monero rpc host from command line argument
@@ -68,11 +93,22 @@ fn get_rpc_host() -> String {
 }
 
 /// Get monero rpc host from command line argument
+fn get_rpc_password() -> String {
+    let args = args::Args::parse();
+    String::from(args.monero_rpc_password)
+}
+
+/// Get monero rpc host from command line argument
 fn get_rpc_creds() -> RpcLogin {
     let args = args::Args::parse();
     let username = String::from(args.monero_rpc_username);
     let credential = String::from(args.monero_rpc_cred);
     RpcLogin { username, credential }
+}
+
+fn get_rpc_daemon() -> String {
+    let args = args::Args::parse();
+    String::from(args.monero_rpc_daemon)
 }
 
 /// Performs rpc 'get_version' method
