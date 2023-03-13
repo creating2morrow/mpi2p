@@ -1,6 +1,7 @@
 # mpi2p
 
-[![Rust](https://github.com/creating2morrow/mpi2p/actions/workflows/rust.yml/badge.svg)](https://github.com/creating2morrow/mpi2p/actions/workflows/rust.yml)
+[![Rust](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_server.yml/badge.svg)](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_server.yml)
+[![egui](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_gui.yml/badge.svg?branch=egui&event=push)](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_gui.yml)
 
 i2p marketplace api standards bootstrap
 
@@ -90,6 +91,11 @@ is screened accordingly. The login API is used to get the random data.
 * customer recieves product and signs multisig transaction
 * vendors signs and submits multisig transaction
 * disputes handled on case-by-case basis, app can sign disputes only
+
+## GUI
+
+* experiment [egui]()
+* push to egui branch
 
 ## Status
 

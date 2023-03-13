@@ -1,4 +1,4 @@
-name: egui
+name: rust-egui
 
 on:
   push:
