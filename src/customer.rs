@@ -69,9 +69,15 @@ pub async fn verify_login(
         db::Interface::delete(&s.env, &s.handle, &u_auth.aid);
         db::Interface::write(&s.env, &s.handle, &u_auth.aid, &Authorization::to_db(&u_auth));
         return u_auth
+    } else if f_cust.xmr_address != utils::empty_string() {
+        info!("returning customer");
+        let m_access = auth::verify_access(&address, &signature).await;
+        if !m_access { return Default::default() }
+        return f_auth;
+    } else {
+        error!("error creating customer");
+        return Default::default()
     }
-    error!("error creating customer");
-    Default::default()
 }
 
 // // /// Update customer information

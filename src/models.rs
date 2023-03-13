@@ -195,17 +195,28 @@ impl Authorization {
         let xmr_address = v.remove(0);
         Authorization { aid: k, created, cvid, rnd, token, xmr_address }
     }
-    pub fn update_cvid(a: Authorization, id: String) -> Authorization {
+    pub fn update_cvid(a: Authorization, cvid: String) -> Authorization {
         Authorization { 
             aid: a.aid, 
             created: a.created, 
-            cvid: id, 
+            cvid, 
             rnd: a.rnd, 
             token: a.token,
             xmr_address: a.xmr_address
         }
     }
+    pub fn update_expiration(a: Authorization, created: i64, rnd: String, token: String) -> Authorization {
+        Authorization { 
+            aid: a.aid, 
+            created, 
+            cvid: a.cvid, 
+            rnd, 
+            token,
+            xmr_address: a.xmr_address
+        }
+    }
 }
+
 #[derive(Debug)]
 pub struct Dispute {
     pub did: String,
