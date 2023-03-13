@@ -78,6 +78,9 @@ pub fn empty_string() -> String { String::from("") }
 
 pub async fn start_up() {
     info!("mpi2p is starting up");
+    monero::start_rpc().await;
+    // wait for rpc server for a bit
+    tokio::time::sleep(Duration::new(5, 0)).await;
     monero::check_rpc_connection().await;
     let env: String = get_release_env().value();
     let dev: String = ReleaseEnvironment::Development.value();

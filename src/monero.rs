@@ -1,9 +1,8 @@
-use crate::args;
-use crate::reqres;
-use crate::utils;
+use crate::{args, reqres, utils};
 use clap::Parser;
 use diqwest::WithDigestAuth;
 use log::{debug, error, info};
+use std::process::Command;
 
 struct RpcLogin {
     username: String,
@@ -48,7 +47,18 @@ impl RpcFields {
     }
 }
 
-// TODO: spin up monero-wallet-rpc from the app
+pub async fn start_rpc() {
+    info!("starting monero-wallet-rpc");
+    // TODO: cmd line args 
+    let output = Command::new("./monero-wallet-rpc")
+        // --rpc-bind-port 38083 --stagenet --wallet-dir wallet --rpc-login user:pass --prompt-for-password  --daemon-address  http://stagenet.xmr-tw.org:38081
+        .args(["--rpc-bind-port", "38083", "--stagenet",
+            "--wallet-dir", "wallet", "--rpc-login", "user:pass",
+            "--password", "pass", "--daemon-address", "https://stagenet.xmr-tw.org:38081"])
+        .spawn()
+        .expect("monero-wallet-rpc failed to start");
+    debug!("{:?}", output.stdout);
+}
 
 /// Get monero rpc host from command line argument
 fn get_rpc_host() -> String {

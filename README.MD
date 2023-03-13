@@ -32,7 +32,6 @@ i2p marketplace api standards bootstrap
 
 * get info [getmonero.org](https://getmonero.org)
 * multisignature wallets to secure and release funds per order
-* start monero-wallet-rpc e.g `./monero-x86_64-linux-gnu-v0.18.1.2/monero-wallet-rpc --rpc-bind-port 38083 --stagenet --wallet-file Monero/test --rpc-login user:pass --prompt-for-password  --daemon-address  http://stagenet.xmr-tw.org:38081`
 
 ## Development
 

@@ -1,5 +1,6 @@
 /target
 /core
 /test-lmdb
+monero-wallet-rpc.log
 notes.txt
 .env
