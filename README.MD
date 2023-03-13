@@ -1,7 +1,7 @@
 # mpi2p
 
-[![Rust](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_server.yml/badge.svg)](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_server.yml)
-[![egui](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_gui.yml/badge.svg?branch=egui&event=push)](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_gui.yml)
+[![rust-server](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_server.yml/badge.svg)](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_server.yml)
+[![rust-egui](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_gui.yml/badge.svg?branch=egui&event=push)](https://github.com/creating2morrow/mpi2p/actions/workflows/rust_gui.yml)
 
 i2p marketplace api standards bootstrap
 
@@ -94,7 +94,7 @@ is screened accordingly. The login API is used to get the random data.
 
 ## GUI
 
-* experiment [egui]()
+* experimental [egui](https://docs.rs/egui/latest/egui/)
 * push to egui branch
 
 ## Status
